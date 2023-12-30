@@ -2,29 +2,85 @@
 title: "Project"
 author: "Gabriela Maślanka, Karolina Gajewska"
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  html_document: 
+    code_folding: hide
+    theme: paper
 ---
+### Wstęp
+Celem pracy jest ..............
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+### Opis danych ...........
+
+Biblioteki użyte w projekcie:
+```{r message=FALSE, warning=FALSE, paged.print=FALSE}
+library(tidyverse)
+```
+Na początku sprawdzamy, czy w naszym zbiorze danych zmienne objaśniające mają wpływ na zmienną objaśnianą. Wykorzystujemy do tego model regresji liniowej.
+```{r message=FALSE, warning=FALSE}
+set.seed(1)
+data<-read.csv("Breast_cancer_data.csv", header = TRUE, sep = ",",dec = ".")
+data$diagnosis<- as.factor(data$diagnosis)
+index <- sample(nrow(data), 450, replace = F)
+train <- data[index,]
+test <- data[-index,]
+model <- caret::train(diagnosis ~ .,data = train, method = "glm")
+summary(model)
+```
+Zauważamy, że wszystkie zmienne wpływają na wynik zmiennej objaśnianej.
+
+#### Przygotowanie danych
+W celu przygotowania danych sprawdzamy, czy występują braki danych.
+```{r}
+any(is.na(data))
+```
+W zbiorze danych nie posiadamy braków.
+
+Następnie wykonujemy wykresy pudełkowe aby sprawdzić, czy zmienne zawierają wartości odstające.
+```{r}
+data_positive <- data[data$diagnosis==1,]
+data_negative <- data[data$diagnosis==0,]
+par(mfrow = c(2, 3))
+for (nazwa_zmiennej in colnames(data_positive)) {
+  boxplot(data_positive[[nazwa_zmiennej]], main = nazwa_zmiennej)
+}
+for (nazwa_zmiennej in colnames(data_negative)) {
+  boxplot(data_negative[[nazwa_zmiennej]], main = nazwa_zmiennej)
+}
 ```
 
-## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+```{r}
+par(mfrow = c(1, 1))
+```
+Usuwamy wartości odstające oraz standaryzujemy dane.
+```{r}
+usuń_odstające <- function(dane) {
+  for (nazwa_zmiennej in colnames(dane)) {
+    if (nazwa_zmiennej != "diagnosis") {  # Sprawdzenie, czy kolumna nie jest "diagnosis"
+      Q1 <- quantile(dane[[nazwa_zmiennej]], 0.25)
+      Q3 <- quantile(dane[[nazwa_zmiennej]], 0.75)
+      IQR_value <- Q3 - Q1
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+      # Określenie granic wartości odstających
+      dolna_granica <- Q1 - 1.5 * IQR_value
+      gorna_granica <- Q3 + 1.5 * IQR_value
 
-```{r cars}
-summary(cars)
+      # Usunięcie wartości odstających
+      dane <- dane[!(dane[[nazwa_zmiennej]] < dolna_granica | dane[[nazwa_zmiennej]] > gorna_granica), ]
+    }
+  }
+  return(dane)
+}
+
+data_positive_clear<- usuń_odstające(data_positive)
+data_negative_clear<- usuń_odstające(data_negative)
+
+data_clear <- rbind(data_positive_clear, data_negative_clear)
+data_clear$mean_radius<- scale(data_clear$mean_radius)
+data_clear$mean_texture<- scale(data_clear$mean_texture)
+data_clear$mean_perimeter<- scale(data_clear$mean_perimeter)
+data_clear$mean_area<- scale(data_clear$mean_area)
+data_clear$mean_smoothness<- scale(data_clear$mean_smoothness)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
