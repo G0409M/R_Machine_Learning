@@ -21,21 +21,21 @@ library(corrplot)
 ### Opis danych 
 Dane na których możemy budować nasz model to:
 
-*zmienne objaśniające*:
+**zmienne objaśniające**:
 
-*mean_radius*: Średni rozmiar guza, istotny dla oceny jego wielkości.
+**mean_radius**: Średni rozmiar guza, istotny dla oceny jego wielkości.
 
-*mean_texture*: Jednorodność komórek guza, mierzona wartością tekstury.
+**mean_texture**: Jednorodność komórek guza, mierzona wartością tekstury.
 
-*mean_perimeter*: Zewnętrzna długość krzywej guza, informująca o jego kształcie.
+**mean_perimeter**: Zewnętrzna długość krzywej guza, informująca o jego kształcie.
 
-*mean_area*: Przestrzenny rozmiar guza, wyrażony jako średnia powierzchnia.
+**mean_area**: Przestrzenny rozmiar guza, wyrażony jako średnia powierzchnia.
 
-*mean_smoothness*: Stopień równomierności komórek, określający gładkość guza.
+**mean_smoothness**: Stopień równomierności komórek, określający gładkość guza.
 
-*Zmienna objaśniana:*
+**Zmienna objaśniana:**
 
-*diagnosis*: Zmienna binarna (0-1) określająca czy zmiana nowotworowa zostałą rozpoznana jako łagodna (0) czy złośliwa (1) .
+**diagnosis**: Zmienna binarna (0-1) określająca czy zmiana nowotworowa zostałą rozpoznana jako łagodna (0) czy złośliwa (1) .
 
 Na początku sprawdzamy, czy w naszym zbiorze danych zmienne objaśniające mają wpływ na zmienną objaśnianą. Wykorzystujemy do tego model regresji liniowej.
 ```{r message=FALSE, warning=FALSE}
@@ -57,11 +57,12 @@ Wykonujemy również macierz korelacji:
 ```{r}
 data$diagnosis_numeric <- as.numeric(data$diagnosis)
 
-correlation <- cor(data[, c("mean_radius", "mean_texture", "mean_perimeter", "mean_area", "mean_smoothness", "diagnosis_numeric")])
+correlation <- cor(data[, c("mean_radius", "mean_texture", "mean_perimeter","mean_area", "mean_smoothness", "diagnosis_numeric")])
 
 
 corrplot(correlation, method = "color", type = "upper", order = "hclust")
 ```
+Najbardziej optymalna byłaby sytuacja, gdyby zmienne objaśniające były silnie skorelowane ze zmienną objaśnianą ale słabo skorelowane między sobą. Na powyższym wykresie widzimy że zmienna diagnosis jest stosunkowo silnie ujemnie skorelowana ze zmiennymi mean_area, mean_radius oraz mean_perimiter, a słabiej, choć również skorelowana ze zmiennymi    mean_smoothness oraz mean_texture. Widzimy również że korelacja nie zachodzi między tymi zmiennymi. Niestety zmienne które najbardziej wpływają na zmienną objaśnianą są ze sobą skorelowane, ale z racji iż posiadamy niewielką ilość zmiennych objaśniających nie będziemy ich usuwać.
 
 #### Przygotowanie danych
 W celu przygotowania danych sprawdzamy, czy występują braki danych.
