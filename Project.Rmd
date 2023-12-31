@@ -8,14 +8,35 @@ output:
     theme: paper
 ---
 ### Wstęp
-Celem pracy jest ..............
 
-### Opis danych ...........
+Celem niniejszej pracy jest osiągnięcie jak najbardziej precyzyjnej prognozy dotyczącej charakteru nowotworu piersi u kobiet, opartej na zebranych danych dotyczących zmian nowotworowych.
 
 Biblioteki użyte w projekcie:
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
 library(tidyverse)
+library(psych)
+library(corrplot)
 ```
+
+### Opis danych 
+Dane na których możemy budować nasz model to:
+
+*zmienne objaśniające*:
+
+*mean_radius*: Średni rozmiar guza, istotny dla oceny jego wielkości.
+
+*mean_texture*: Jednorodność komórek guza, mierzona wartością tekstury.
+
+*mean_perimeter*: Zewnętrzna długość krzywej guza, informująca o jego kształcie.
+
+*mean_area*: Przestrzenny rozmiar guza, wyrażony jako średnia powierzchnia.
+
+*mean_smoothness*: Stopień równomierności komórek, określający gładkość guza.
+
+*Zmienna objaśniana:*
+
+*diagnosis*: Zmienna binarna (0-1) określająca czy zmiana nowotworowa zostałą rozpoznana jako łagodna (0) czy złośliwa (1) .
+
 Na początku sprawdzamy, czy w naszym zbiorze danych zmienne objaśniające mają wpływ na zmienną objaśnianą. Wykorzystujemy do tego model regresji liniowej.
 ```{r message=FALSE, warning=FALSE}
 set.seed(1)
@@ -24,10 +45,23 @@ data$diagnosis<- as.factor(data$diagnosis)
 index <- sample(nrow(data), 450, replace = F)
 train <- data[index,]
 test <- data[-index,]
-model <- caret::train(diagnosis ~ .,data = train, method = "glm")
+
+model <- glm(diagnosis ~ mean_radius + mean_texture + mean_perimeter + mean_area + mean_smoothness, 
+             data, 
+             family = "binomial")
 summary(model)
 ```
 Zauważamy, że wszystkie zmienne wpływają na wynik zmiennej objaśnianej.
+
+Wykonujemy również macierz korelacji:
+```{r}
+data$diagnosis_numeric <- as.numeric(data$diagnosis)
+
+correlation <- cor(data[, c("mean_radius", "mean_texture", "mean_perimeter", "mean_area", "mean_smoothness", "diagnosis_numeric")])
+
+
+corrplot(correlation, method = "color", type = "upper", order = "hclust")
+```
 
 #### Przygotowanie danych
 W celu przygotowania danych sprawdzamy, czy występują braki danych.
@@ -82,5 +116,28 @@ data_clear$mean_texture<- scale(data_clear$mean_texture)
 data_clear$mean_perimeter<- scale(data_clear$mean_perimeter)
 data_clear$mean_area<- scale(data_clear$mean_area)
 data_clear$mean_smoothness<- scale(data_clear$mean_smoothness)
+```
+Podstawowe statystyki na zbiorze danych.
+
+```{r}
+describe(select(data, -diagnosis))
+prop.table(table(data$diagnosis))
+```
+Kiedy skalowanie???
+
+#### Podział na zbiór uczący oraz testowy
+Zbiór został podzielony w proporcji 80:20
+```{r}
+index <- sample(nrow(data), 420, replace = F)
+train <- data[index,]
+test <- data[-index,]
+```
+
+Następnie porównujemy podstawowe statystyki w obu grupach.
+```{r}
+describe(select(train, -diagnosis))
+prop.table(table(train$diagnosis))
+describe(select(test, -diagnosis))
+prop.table(table(test$diagnosis))
 ```
 
