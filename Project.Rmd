@@ -16,6 +16,8 @@ Biblioteki użyte w projekcie:
 library(tidyverse)
 library(psych)
 library(corrplot)
+library(e1071)
+library(caret)
 ```
 
 ### Opis danych 
@@ -143,16 +145,7 @@ usuń_odstające <- function(dane) {
 
 data_positive_clear<- usuń_odstające(data_positive)
 data_negative_clear<- usuń_odstające(data_negative)
-```
-
-##### Skalowanie danych
-```{r}
 data_clear <- rbind(data_positive_clear, data_negative_clear)
-data_clear$mean_radius<- scale(data_clear$mean_radius)
-data_clear$mean_texture<- scale(data_clear$mean_texture)
-data_clear$mean_perimeter<- scale(data_clear$mean_perimeter)
-data_clear$mean_area<- scale(data_clear$mean_area)
-data_clear$mean_smoothness<- scale(data_clear$mean_smoothness)
 ```
 
 
@@ -170,5 +163,81 @@ describe(select(train, -diagnosis))
 prop.table(table(train$diagnosis))
 describe(select(test, -diagnosis))
 prop.table(table(test$diagnosis))
+```
+Średnie wartości praktycznie wszystkich zmiennych w zbiorach train i test różnią się od siebie, lecz patrząc na odchylenia standardowych tych zmiennych nie różnią się od siebie bardzo ( np średnia wartość zmiennej mean_radius wynosi 13.95 w zbiorze uczącycym oraz 14.63 w zbiorze testowym, ale odchylenia standardowe w obu grupach wynoszą 3.79 więc różnicę rzędu 0.68 jesteśmy w stanie zaakceptować). Zauważamy również że średnie wartości zmiennych są wyższe w zbiorze train. Największa różnica średniej i mediany występuje u zmiennej mean_area, co wskazuje na to, że w zbiorze treningowym znalazło się więcej obserwacji o wyższej średniej powierzchni guza. Jeśli chodzi o podział obserwacji na pozytywne oraz negatywne, w zbiorze treningowym mamy większy odsetek obserwacji pozytywnych (66%) niż w zbiorze testowym (52%), jednak różnica ta nie jest wielka.
+
+##### Standaryzujemy dane
+```{r}
+
+train$mean_radius<- scale(train$mean_radius)
+train$mean_texture<- scale(train$mean_texture)
+train$mean_perimeter<- scale(train$mean_perimeter)
+train$mean_area<- scale(train$mean_area)
+train$mean_smoothness<- scale(train$mean_smoothness)
+
+
+test$mean_radius<- scale(test$mean_radius)
+test$mean_texture<- scale(test$mean_texture)
+test$mean_perimeter<- scale(test$mean_perimeter)
+test$mean_area<- scale(test$mean_area)
+test$mean_smoothness<- scale(test$mean_smoothness)
+```
+
+#### Wykonanie modeli uczenia maszynowego
+
+##### Model SVM
+
+Pierwszym modelem, któy zdecydowałyśmy się stworzyć jest model SVM o jądrze liniowym. Jedynym parametrem, jaki można w tym modelu optymalizować to wartość kosztu, dlatego wykonałyśmy wykres obrazujący wartości dokładności i czułości w zależności od przyjętego poziomu kosztu.
+```{r message=FALSE, warning=FALSE}
+library(ggplot2)
+
+costs <- seq(0.01, 2, by = 0.1)
+results <- data.frame(cost = numeric(), accuracy = numeric(), sensitivity = numeric())
+
+for (cost in costs) {
+  model <- svm(formula = diagnosis ~ ., data = train, kernel = "linear", cost = cost)
+  pred_train <- predict(model, newdata = train)
+  conf_matrix <- confusionMatrix(pred_train, train$diagnosis, positive = "1")
+  accuracy <- conf_matrix$overall["Accuracy"]
+  sensitivity <- conf_matrix$byClass["Sensitivity"]
+  results <- rbind(results, data.frame(cost = cost, accuracy = accuracy, sensitivity = sensitivity))
+}
+
+ggplot(results, aes(x = cost)) +
+  geom_line(aes(y = accuracy, color = "Accuracy"), size = 1.5) +
+  geom_line(aes(y = sensitivity, color = "Sensitivity"), size = 1.5) +
+  labs(title = "Wyniki dla różnych kosztów",
+       x = "Koszt", y = "Wartość") +
+  scale_color_manual(name = "Wartość", values = c("Accuracy" = "blue", "Sensitivity" = "red")) +
+  theme_minimal()
+
+```
+Po analizie wykresu zdecydowaliśmy się przyjąć wartość parametru kosztu na poziomie 0.41 ponieważ oferuje on dobry stosunek dokładności do czułości.
+
+Następnie tworzymy model SVM z przyjętą wartością parametru kosztu oraz porównujemny wyniki na zbiorze uczącym i testowym
+```{r}
+model <- svm(formula = diagnosis ~ ., data = train, kernel = "linear", cost = 0.41)
+pred_train <- predict(model, newdata = train)
+conf_matrix_train <- confusionMatrix(pred_train, train$diagnosis, positive = "1")
+accuracy_train <- conf_matrix_train$overall["Accuracy"]
+sensitivity_train <- conf_matrix_train$byClass["Sensitivity"]
+specificity_train <- conf_matrix_train$byClass["Specificity"]
+
+pred_test <- predict(model, newdata = test)
+conf_matrix_test <- confusionMatrix(pred_test, test$diagnosis, positive = "1")
+accuracy_test <- conf_matrix_test$overall["Accuracy"]
+sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
+specificity_test <- conf_matrix_test$byClass["Specificity"]
+
+# Utwórz tabelkę
+comparison_table <- data.frame(
+  Dataset = c("Train", "Test"),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+# Wyświetl tabelkę
+print(comparison_table)
 ```
 
