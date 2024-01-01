@@ -37,6 +37,7 @@ Dane na których możemy budować nasz model to:
 
 **diagnosis**: Zmienna binarna (0-1) określająca czy zmiana nowotworowa zostałą rozpoznana jako łagodna (0) czy złośliwa (1) .
 
+##### Analiza wpływu poszczególnych zmiennych na zmienną prognozowaną
 Na początku sprawdzamy, czy w naszym zbiorze danych zmienne objaśniające mają wpływ na zmienną objaśnianą. Wykorzystujemy do tego model regresji liniowej.
 ```{r message=FALSE, warning=FALSE}
 set.seed(1)
@@ -55,14 +56,46 @@ Zauważamy, że wszystkie zmienne wpływają na wynik zmiennej objaśnianej.
 
 Wykonujemy również macierz korelacji:
 ```{r}
-data$diagnosis_numeric <- as.numeric(data$diagnosis)
+data$diagnosis <- as.numeric(data$diagnosis)
 
-correlation <- cor(data[, c("mean_radius", "mean_texture", "mean_perimeter","mean_area", "mean_smoothness", "diagnosis_numeric")])
+correlation <- cor(data[, c("mean_radius", "mean_texture", "mean_perimeter","mean_area", "mean_smoothness", "diagnosis")])
 
 
 corrplot(correlation, method = "color", type = "upper", order = "hclust")
+data$diagnosis <- as.factor(data$diagnosis)
+data$diagnosis <- factor(data$diagnosis, levels = c( 1, 2), labels = c( 1, 0))
 ```
 Najbardziej optymalna byłaby sytuacja, gdyby zmienne objaśniające były silnie skorelowane ze zmienną objaśnianą ale słabo skorelowane między sobą. Na powyższym wykresie widzimy że zmienna diagnosis jest stosunkowo silnie ujemnie skorelowana ze zmiennymi mean_area, mean_radius oraz mean_perimiter, a słabiej, choć również skorelowana ze zmiennymi    mean_smoothness oraz mean_texture. Widzimy również że korelacja nie zachodzi między tymi zmiennymi. Niestety zmienne które najbardziej wpływają na zmienną objaśnianą są ze sobą skorelowane, ale z racji iż posiadamy niewielką ilość zmiennych objaśniających nie będziemy ich usuwać.
+
+##### Podstawowe statystyki na zbiorze danych i ocena zbalansowania zbioru danych
+
+```{r}
+describe(select(data, -diagnosis))
+prop.table(table(data$diagnosis))
+```
+**mean_radius (Średnica guza)**:
+
+Średnia średnicy guza wynosi 14.13, a odchylenie standardowe wynosi 3.52. Sugeruje to umiarkowany stopień zmienności w średnicy guza. Mediana wynosi 13.37, a średnia przycięta (bez wpływu wartości skrajnych) to 13.82, co wskazuje na ewentualne obecność wartości odstających, jednakże nie powinno być ich bardzo dużo bo mediana i średnia są do siebie zbliżone, co sugeruje również że rozkład tej zmiennej może być zbliżony do rozkładu normalnego.
+
+**mean_texture (Średnia tekstura guza):**
+
+Średnia tekstury guza wynosi 19.29, a odchylenie standardowe to 4.30. Rozproszenie jest względnie wysokie. Mediana (18.84) i średnia przycięta (19.04) są zbliżone, co sugeruje równomierny rozkład wartości jak i również możliwość istnienia kilku wartości odstających.
+
+**mean_perimeter (Średni obwód guza):**
+
+Średni obwód guza wynosi 91.97, a odchylenie standardowe wynosi 24.30, co wskazuje na duże zróżnicowanie w obwodzie guza. Mediana (86.24) i średnia przycięta (89.74) są niższe niż średnia arytmetyczna, co może świadczyć o wpływie wartości skrajnych.
+
+**mean_area (Średnia powierzchnia guza):**
+
+Średnia powierzchnia guza wynosi 654.89, a odchylenie standardowe to 351.91, co sugeruje znaczną zmienność. Mediana (551.10) jest znacząco niższa niż średnia arytmetyczna, co może wynikać z obecności wartości odstających o dużych powierzchniach guza. Zmienna ta wydaje się być znacznie bardziej zróżnicowana niż pozostałe zmienne, co sugeruje, że obszar guzów może mieć znaczący wpływ na analizę.
+
+**mean_smoothness (Średnia gładkość guza):**
+
+Średnia gładkość guza wynosi 0.10, a odchylenie standardowe to 0.01. Wartości te sugerują niewielką zmienność w gładkości guza. Skośność jest bliska zeru, co wskazuje na symetryczny rozkład. Wartości "mean_smoothness" wydają się być dość zbliżone, co wskazuje na mniejszą zmienność w gładkości guza.
+
+##### Ocena zbalansowania zbioru danych
+**diagnosis (diagnoza)**
+37% danych to zmiany nowotworowe zdiagnozowane jako łagodne, a 63% danych to zmiany złośliwe. WIdzimy, że zbiór danych jest średnio zbalansowany, ponieważ występuje więcej wartości 1 niż 0. 
 
 #### Przygotowanie danych
 W celu przygotowania danych sprawdzamy, czy występują braki danych.
@@ -88,7 +121,7 @@ for (nazwa_zmiennej in colnames(data_negative)) {
 ```{r}
 par(mfrow = c(1, 1))
 ```
-Usuwamy wartości odstające oraz standaryzujemy dane.
+##### Usuwanie wartości odstających
 ```{r}
 usuń_odstające <- function(dane) {
   for (nazwa_zmiennej in colnames(dane)) {
@@ -110,7 +143,10 @@ usuń_odstające <- function(dane) {
 
 data_positive_clear<- usuń_odstające(data_positive)
 data_negative_clear<- usuń_odstające(data_negative)
+```
 
+##### Skalowanie danych
+```{r}
 data_clear <- rbind(data_positive_clear, data_negative_clear)
 data_clear$mean_radius<- scale(data_clear$mean_radius)
 data_clear$mean_texture<- scale(data_clear$mean_texture)
@@ -118,13 +154,7 @@ data_clear$mean_perimeter<- scale(data_clear$mean_perimeter)
 data_clear$mean_area<- scale(data_clear$mean_area)
 data_clear$mean_smoothness<- scale(data_clear$mean_smoothness)
 ```
-Podstawowe statystyki na zbiorze danych.
 
-```{r}
-describe(select(data, -diagnosis))
-prop.table(table(data$diagnosis))
-```
-Kiedy skalowanie???
 
 #### Podział na zbiór uczący oraz testowy
 Zbiór został podzielony w proporcji 80:20
