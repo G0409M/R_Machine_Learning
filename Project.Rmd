@@ -18,6 +18,9 @@ library(psych)
 library(corrplot)
 library(e1071)
 library(caret)
+library(randomForest)
+library(ROSE)
+library(smotefamily)
 ```
 
 ### Opis danych 
@@ -146,6 +149,7 @@ usuń_odstające <- function(dane) {
 data_positive_clear<- usuń_odstające(data_positive)
 data_negative_clear<- usuń_odstające(data_negative)
 data_clear <- rbind(data_positive_clear, data_negative_clear)
+
 ```
 
 
@@ -229,15 +233,105 @@ accuracy_test <- conf_matrix_test$overall["Accuracy"]
 sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
 specificity_test <- conf_matrix_test$byClass["Specificity"]
 
-# Utwórz tabelkę
-comparison_table <- data.frame(
+comparison_table_svm <- data.frame(
   Dataset = c("Train", "Test"),
   Accuracy = c(accuracy_train, accuracy_test),
   Sensitivity = c(sensitivity_train, sensitivity_test),
   Specificity = c(specificity_train, specificity_test)
 )
 
-# Wyświetl tabelkę
-print(comparison_table)
+print(comparison_table_svm)
 ```
+Zauważamy, że nasz model osiągnął zadowalające wyniki, dokładność czułość i specyficzność posiadają podobne wartości dla zbioru uczącego i testowego. Co zaskakujące, wartość czułości dla zbioru testowego wyszła wyższa niż dla zbioru testowego.
 
+##### Lasy losowe
+```{r}
+model <- randomForest(diagnosis ~ ., data = train%>%slice_sample(prop=0.4), ntree = 100)
+pred_train <- predict(model, newdata = train)
+conf_matrix_train <- confusionMatrix(pred_train, train$diagnosis, positive = "1")
+accuracy_train <- conf_matrix_train$overall["Accuracy"]
+sensitivity_train <- conf_matrix_train$byClass["Sensitivity"]
+specificity_train <- conf_matrix_train$byClass["Specificity"]
+
+pred_test <- predict(model, newdata = test)
+conf_matrix_test <- confusionMatrix(pred_test, test$diagnosis, positive = "1")
+accuracy_test <- conf_matrix_test$overall["Accuracy"]
+sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
+specificity_test <- conf_matrix_test$byClass["Specificity"]
+
+comparison_table_rForest <- data.frame(
+  Dataset = c("Train", "Test"),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_rForest)
+```
+Dla porónania wykonamy oversampling, aby sprawdzić czy model będzie wtedy lepszy.
+```{r include=FALSE}
+prop.table(table(train$diagnosis))
+over_train <- ovun.sample(diagnosis ~ ., data = train, method="over",p=0.50 )$data
+prop.table(table(over_train$diagnosis))
+under_train <- ovun.sample(diagnosis ~ ., data = train, method="under",p=0.50 )$data
+prop.table(table(under_train$diagnosis))
+```
+Undersampling:
+```{r}
+model <- randomForest(diagnosis ~ ., data = under_train%>%slice_sample(prop=0.4), ntree = 100)
+pred_train <- predict(model, newdata = under_train)
+conf_matrix_train <- confusionMatrix(pred_train, under_train$diagnosis, positive = "1")
+accuracy_train <- conf_matrix_train$overall["Accuracy"]
+sensitivity_train <- conf_matrix_train$byClass["Sensitivity"]
+specificity_train <- conf_matrix_train$byClass["Specificity"]
+
+pred_test <- predict(model, newdata = test)
+conf_matrix_test <- confusionMatrix(pred_test, test$diagnosis, positive = "1")
+accuracy_test <- conf_matrix_test$overall["Accuracy"]
+sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
+specificity_test <- conf_matrix_test$byClass["Specificity"]
+
+comparison_table_rForest_u <- data.frame(
+  Dataset = c("Train", "Test"),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_rForest_u)
+```
+Undersampling:
+```{r}
+model <- randomForest(diagnosis ~ ., data = over_train%>%slice_sample(prop=0.4), ntree = 100)
+pred_train <- predict(model, newdata = over_train)
+conf_matrix_train <- confusionMatrix(pred_train, over_train$diagnosis, positive = "1")
+accuracy_train <- conf_matrix_train$overall["Accuracy"]
+sensitivity_train <- conf_matrix_train$byClass["Sensitivity"]
+specificity_train <- conf_matrix_train$byClass["Specificity"]
+
+pred_test <- predict(model, newdata = test)
+conf_matrix_test <- confusionMatrix(pred_test, test$diagnosis, positive = "1")
+accuracy_test <- conf_matrix_test$overall["Accuracy"]
+sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
+specificity_test <- conf_matrix_test$byClass["Specificity"]
+
+comparison_table_rForest_o <- data.frame(
+  Dataset = c("Train", "Test"),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_rForest_o)
+```
+Porównamy wyniki uzyskane z lasów losowych oraz lasów losowych z zastosowaniem oversamplingu i undersamplingu.
+```{r}
+print(comparison_table_rForest)
+print(comparison_table_rForest_u)
+print(comparison_table_rForest_o)
+```
+Co ciekawe, zauważamy że wyniki na zbiorze train przyjmują różne wartości dla wszystkich metod, jednak na zbiorze testowym wartości dokładności czułości i specyficzności uzyskanych za pomocą zwykłych lasów losowych jak i lasów losowych z użyciem undersamplingu przyjmują te same wartości, mimo że na zbiorze testowym przy użyciu undersamplingu uzyskaliśmy wyższe wartości dokładności i specyficzności. Przy użyciu oversamplingu otrzymaliśmy zdecydowanie lepsze wartości na zbiorze testowym w poróznaniu ze zwykłymi lasami losowymi, ale na zbiorze testowym model stworzony na rozszerzonym zbiorze danych osiągnął gorszą specyficzność, jednakże lepszą (jak i również najlepszą) czułość, dlatego biorąc pod uwagę że mamy styczność z danymi medycznymi jako najlepszy wybierzemy model z najwyższą czułością, więc model stworzony w oparciu o oversampled data.
+
+##### Model regersji logistycznej
+
+Ostatnim modelem utworzonym w nasym projekcie będzie model regresji logistycznej

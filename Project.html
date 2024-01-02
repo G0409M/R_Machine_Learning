@@ -11,7 +11,7 @@
 
 <meta name="author" content="Gabriela Maślanka, Karolina Gajewska" />
 
-<meta name="date" content="2024-01-01" />
+<meta name="date" content="2024-01-02" />
 
 <title>Project</title>
 
@@ -464,7 +464,7 @@ display: none;
 
 <h1 class="title toc-ignore">Project</h1>
 <h4 class="author">Gabriela Maślanka, Karolina Gajewska</h4>
-<h4 class="date">2024-01-01</h4>
+<h4 class="date">2024-01-02</h4>
 
 </div>
 
@@ -479,7 +479,10 @@ zebranych danych dotyczących zmian nowotworowych.</p>
 library(psych)
 library(corrplot)
 library(e1071)
-library(caret)</code></pre>
+library(caret)
+library(randomForest)
+library(ROSE)
+library(smotefamily)</code></pre>
 </div>
 <div id="opis-danych" class="section level3">
 <h3>Opis danych</h3>
@@ -785,19 +788,138 @@ accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
 sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
 specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
 
-# Utwórz tabelkę
-comparison_table &lt;- data.frame(
+comparison_table_svm &lt;- data.frame(
   Dataset = c(&quot;Train&quot;, &quot;Test&quot;),
   Accuracy = c(accuracy_train, accuracy_test),
   Sensitivity = c(sensitivity_train, sensitivity_test),
   Specificity = c(specificity_train, specificity_test)
 )
 
-# Wyświetl tabelkę
-print(comparison_table)</code></pre>
+print(comparison_table_svm)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
 ## 1   Train 0.9309524   0.8439716   0.9749104
 ## 2    Test 0.8859060   0.7746479   0.9871795</code></pre>
+<p>Zauważamy, że nasz model osiągnął zadowalające wyniki, dokładność
+czułość i specyficzność posiadają podobne wartości dla zbioru uczącego i
+testowego. Co zaskakujące, wartość czułości dla zbioru testowego wyszła
+wyższa niż dla zbioru testowego.</p>
+</div>
+<div id="lasy-losowe" class="section level5">
+<h5>Lasy losowe</h5>
+<pre class="r"><code>model &lt;- randomForest(diagnosis ~ ., data = train%&gt;%slice_sample(prop=0.4), ntree = 100)
+pred_train &lt;- predict(model, newdata = train)
+conf_matrix_train &lt;- confusionMatrix(pred_train, train$diagnosis, positive = &quot;1&quot;)
+accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
+sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
+specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
+
+pred_test &lt;- predict(model, newdata = test)
+conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)
+accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
+sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
+specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
+
+comparison_table_rForest &lt;- data.frame(
+  Dataset = c(&quot;Train&quot;, &quot;Test&quot;),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_rForest)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9380952   0.8368794   0.9892473
+## 2    Test 0.8590604   0.7323944   0.9743590</code></pre>
+<p>Dla porónania wykonamy oversampling, aby sprawdzić czy model będzie
+wtedy lepszy.</p>
+<p>Undersampling:</p>
+<pre class="r"><code>model &lt;- randomForest(diagnosis ~ ., data = under_train%&gt;%slice_sample(prop=0.4), ntree = 100)
+pred_train &lt;- predict(model, newdata = under_train)
+conf_matrix_train &lt;- confusionMatrix(pred_train, under_train$diagnosis, positive = &quot;1&quot;)
+accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
+sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
+specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
+
+pred_test &lt;- predict(model, newdata = test)
+conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)</code></pre>
+<pre><code>## Warning in confusionMatrix.default(pred_test, test$diagnosis, positive = &quot;1&quot;):
+## Levels are not in the same order for reference and data. Refactoring data to
+## match.</code></pre>
+<pre class="r"><code>accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
+sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
+specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
+
+comparison_table_rForest_u &lt;- data.frame(
+  Dataset = c(&quot;Train&quot;, &quot;Test&quot;),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_rForest_u)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9473684   0.9290780   0.9652778
+## 2    Test 0.9463087   0.9014085   0.9871795</code></pre>
+<p>Undersampling:</p>
+<pre class="r"><code>model &lt;- randomForest(diagnosis ~ ., data = over_train%&gt;%slice_sample(prop=0.4), ntree = 100)
+pred_train &lt;- predict(model, newdata = over_train)
+conf_matrix_train &lt;- confusionMatrix(pred_train, over_train$diagnosis, positive = &quot;1&quot;)
+accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
+sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
+specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
+
+pred_test &lt;- predict(model, newdata = test)
+conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)</code></pre>
+<pre><code>## Warning in confusionMatrix.default(pred_test, test$diagnosis, positive = &quot;1&quot;):
+## Levels are not in the same order for reference and data. Refactoring data to
+## match.</code></pre>
+<pre class="r"><code>accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
+sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
+specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
+
+comparison_table_rForest_o &lt;- data.frame(
+  Dataset = c(&quot;Train&quot;, &quot;Test&quot;),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_rForest_o)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9488536   0.9583333   0.9390681
+## 2    Test 0.8859060   0.8309859   0.9358974</code></pre>
+<p>Porównamy wyniki uzyskane z lasów losowych oraz lasów losowych z
+zastosowaniem oversamplingu i undersamplingu.</p>
+<pre class="r"><code>print(comparison_table_rForest)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9380952   0.8368794   0.9892473
+## 2    Test 0.8590604   0.7323944   0.9743590</code></pre>
+<pre class="r"><code>print(comparison_table_rForest_u)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9473684   0.9290780   0.9652778
+## 2    Test 0.9463087   0.9014085   0.9871795</code></pre>
+<pre class="r"><code>print(comparison_table_rForest_o)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9488536   0.9583333   0.9390681
+## 2    Test 0.8859060   0.8309859   0.9358974</code></pre>
+<p>Co ciekawe, zauważamy że wyniki na zbiorze train przyjmują różne
+wartości dla wszystkich metod, jednak na zbiorze testowym wartości
+dokładności czułości i specyficzności uzyskanych za pomocą zwykłych
+lasów losowych jak i lasów losowych z użyciem undersamplingu przyjmują
+te same wartości, mimo że na zbiorze testowym przy użyciu undersamplingu
+uzyskaliśmy wyższe wartości dokładności i specyficzności. Przy użyciu
+oversamplingu otrzymaliśmy zdecydowanie lepsze wartości na zbiorze
+testowym w poróznaniu ze zwykłymi lasami losowymi, ale na zbiorze
+testowym model stworzony na rozszerzonym zbiorze danych osiągnął gorszą
+specyficzność, jednakże lepszą (jak i również najlepszą) czułość,
+dlatego biorąc pod uwagę że mamy styczność z danymi medycznymi jako
+najlepszy wybierzemy model z najwyższą czułością, więc model stworzony w
+oparciu o oversampled data.</p>
+</div>
+<div id="model-regersji-logistycznej" class="section level5">
+<h5>Model regersji logistycznej</h5>
+<p>Ostatnim modelem utworzonym w nasym projekcie będzie model regresji
+logistycznej</p>
 </div>
 </div>
 </div>
