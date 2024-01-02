@@ -249,6 +249,72 @@ comparison_table_svm <- data.frame(
 print(comparison_table_svm)
 ```
 Zauważamy, że nasz model osiągnął zadowalające wyniki, dokładność czułość i specyficzność posiadają podobne wartości dla zbioru uczącego i testowego. Co zaskakujące, wartość czułości dla zbioru testowego wyszła wyższa niż dla zbioru testowego.
+Sprawdzimy też, jakie byłyby wyniki gdybyśmy próbowali jeszcze dokładniej zbalansować nasze dane.
+```{r include=FALSE}
+prop.table(table(train$diagnosis))
+over_train <- ovun.sample(diagnosis ~ ., data = train, method="over",p=0.50 )$data
+prop.table(table(over_train$diagnosis))
+under_train <- ovun.sample(diagnosis ~ ., data = train, method="under",p=0.50 )$data
+prop.table(table(under_train$diagnosis))
+```
+Dla porónania wykonamy oversampling i undersampling, aby sprawdzić czy model będzie wtedy lepszy.
+
+Undersampling:
+```{r warning=FALSE}
+model <- svm(formula = diagnosis ~ ., data = train, kernel = "linear", cost = 0.41)
+pred_train <- predict(model, newdata = under_train)
+conf_matrix_train <- confusionMatrix(pred_train, under_train$diagnosis, positive = "1")
+accuracy_train <- conf_matrix_train$overall["Accuracy"]
+sensitivity_train <- conf_matrix_train$byClass["Sensitivity"]
+specificity_train <- conf_matrix_train$byClass["Specificity"]
+
+pred_test <- predict(model, newdata = test)
+conf_matrix_test <- confusionMatrix(pred_test, test$diagnosis, positive = "1")
+accuracy_test <- conf_matrix_test$overall["Accuracy"]
+sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
+specificity_test <- conf_matrix_test$byClass["Specificity"]
+
+comparison_table_svm_u <- data.frame(
+  Dataset = c("Train", "Test"),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_svm_u)
+```
+Oversampling:
+```{r warning=FALSE}
+model <- svm(formula = diagnosis ~ ., data = train, kernel = "linear", cost = 0.41)
+pred_train <- predict(model, newdata = over_train)
+conf_matrix_train <- confusionMatrix(pred_train, over_train$diagnosis, positive = "1")
+accuracy_train <- conf_matrix_train$overall["Accuracy"]
+sensitivity_train <- conf_matrix_train$byClass["Sensitivity"]
+specificity_train <- conf_matrix_train$byClass["Specificity"]
+
+pred_test <- predict(model, newdata = test)
+conf_matrix_test <- confusionMatrix(pred_test, test$diagnosis, positive = "1")
+accuracy_test <- conf_matrix_test$overall["Accuracy"]
+sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
+specificity_test <- conf_matrix_test$byClass["Specificity"]
+
+comparison_table_svm_o <- data.frame(
+  Dataset = c("Train", "Test"),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_svm_o)
+```
+Porównamy wyniki uzyskane z lasów losowych oraz lasów losowych z zastosowaniem oversamplingu i undersamplingu.
+```{r}
+print(comparison_table_svm)
+print(comparison_table_svm_u)
+print(comparison_table_svm_o)
+```
+W tym wypadku wartości na zbiorze treningowym wychodzą różne dla wszystkich metod, jednak na zbiorze testowym wszystkie metody dają dokładnie takie same wartości, więc w tym wypadku za najlepszy model uznamy model bez dodatkowego balansowania danych.
+
 
 ##### Lasy losowe
 ```{r}
@@ -275,13 +341,7 @@ comparison_table_rForest <- data.frame(
 print(comparison_table_rForest)
 ```
 Dla porónania wykonamy oversampling, aby sprawdzić czy model będzie wtedy lepszy.
-```{r include=FALSE}
-prop.table(table(train$diagnosis))
-over_train <- ovun.sample(diagnosis ~ ., data = train, method="over",p=0.50 )$data
-prop.table(table(over_train$diagnosis))
-under_train <- ovun.sample(diagnosis ~ ., data = train, method="under",p=0.50 )$data
-prop.table(table(under_train$diagnosis))
-```
+
 Undersampling:
 ```{r warning=FALSE}
 model <- randomForest(diagnosis ~ ., data = under_train%>%slice_sample(prop=0.4), ntree = 100)
@@ -306,7 +366,7 @@ comparison_table_rForest_u <- data.frame(
 
 print(comparison_table_rForest_u)
 ```
-Undersampling:
+Oversampling:
 ```{r warning=FALSE}
 model <- randomForest(diagnosis ~ ., data = over_train%>%slice_sample(prop=0.4), ntree = 100)
 pred_train <- predict(model, newdata = over_train)

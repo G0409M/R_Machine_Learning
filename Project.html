@@ -812,7 +812,78 @@ print(comparison_table_svm)</code></pre>
 <p>Zauważamy, że nasz model osiągnął zadowalające wyniki, dokładność
 czułość i specyficzność posiadają podobne wartości dla zbioru uczącego i
 testowego. Co zaskakujące, wartość czułości dla zbioru testowego wyszła
-wyższa niż dla zbioru testowego.</p>
+wyższa niż dla zbioru testowego. Sprawdzimy też, jakie byłyby wyniki
+gdybyśmy próbowali jeszcze dokładniej zbalansować nasze dane.</p>
+<p>Dla porónania wykonamy oversampling i undersampling, aby sprawdzić
+czy model będzie wtedy lepszy.</p>
+<p>Undersampling:</p>
+<pre class="r"><code>model &lt;- svm(formula = diagnosis ~ ., data = train, kernel = &quot;linear&quot;, cost = 0.41)
+pred_train &lt;- predict(model, newdata = under_train)
+conf_matrix_train &lt;- confusionMatrix(pred_train, under_train$diagnosis, positive = &quot;1&quot;)
+accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
+sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
+specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
+
+pred_test &lt;- predict(model, newdata = test)
+conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)
+accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
+sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
+specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
+
+comparison_table_svm_u &lt;- data.frame(
+  Dataset = c(&quot;Train&quot;, &quot;Test&quot;),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_svm_u)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9078014   0.8439716   0.9716312
+## 2    Test 0.8859060   0.7746479   0.9871795</code></pre>
+<p>Oversampling:</p>
+<pre class="r"><code>model &lt;- svm(formula = diagnosis ~ ., data = train, kernel = &quot;linear&quot;, cost = 0.41)
+pred_train &lt;- predict(model, newdata = over_train)
+conf_matrix_train &lt;- confusionMatrix(pred_train, over_train$diagnosis, positive = &quot;1&quot;)
+accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
+sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
+specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
+
+pred_test &lt;- predict(model, newdata = test)
+conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)
+accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
+sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
+specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
+
+comparison_table_svm_o &lt;- data.frame(
+  Dataset = c(&quot;Train&quot;, &quot;Test&quot;),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_svm_o)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9084249   0.8389513   0.9749104
+## 2    Test 0.8859060   0.7746479   0.9871795</code></pre>
+<p>Porównamy wyniki uzyskane z lasów losowych oraz lasów losowych z
+zastosowaniem oversamplingu i undersamplingu.</p>
+<pre class="r"><code>print(comparison_table_svm)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9309524   0.8439716   0.9749104
+## 2    Test 0.8859060   0.7746479   0.9871795</code></pre>
+<pre class="r"><code>print(comparison_table_svm_u)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9078014   0.8439716   0.9716312
+## 2    Test 0.8859060   0.7746479   0.9871795</code></pre>
+<pre class="r"><code>print(comparison_table_svm_o)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9084249   0.8389513   0.9749104
+## 2    Test 0.8859060   0.7746479   0.9871795</code></pre>
+<p>W tym wypadku wartości na zbiorze treningowym wychodzą różne dla
+wszystkich metod, jednak na zbiorze testowym wszystkie metody dają
+dokładnie takie same wartości, więc w tym wypadku za najlepszy model
+uznamy model bez dodatkowego balansowania danych.</p>
 </div>
 <div id="lasy-losowe" class="section level5">
 <h5>Lasy losowe</h5>
@@ -838,8 +909,8 @@ comparison_table_rForest &lt;- data.frame(
 
 print(comparison_table_rForest)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9380952   0.8368794   0.9892473
-## 2    Test 0.8590604   0.7323944   0.9743590</code></pre>
+## 1   Train 0.9428571   0.8865248   0.9713262
+## 2    Test 0.8657718   0.7183099   1.0000000</code></pre>
 <p>Dla porónania wykonamy oversampling, aby sprawdzić czy model będzie
 wtedy lepszy.</p>
 <p>Undersampling:</p>
@@ -865,9 +936,9 @@ comparison_table_rForest_u &lt;- data.frame(
 
 print(comparison_table_rForest_u)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9473684   0.9290780   0.9652778
-## 2    Test 0.9463087   0.9014085   0.9871795</code></pre>
-<p>Undersampling:</p>
+## 1   Train 0.9219858   0.9078014   0.9361702
+## 2    Test 0.9060403   0.8309859   0.9743590</code></pre>
+<p>Oversampling:</p>
 <pre class="r"><code>model &lt;- randomForest(diagnosis ~ ., data = over_train%&gt;%slice_sample(prop=0.4), ntree = 100)
 pred_train &lt;- predict(model, newdata = over_train)
 conf_matrix_train &lt;- confusionMatrix(pred_train, over_train$diagnosis, positive = &quot;1&quot;)
@@ -890,22 +961,22 @@ comparison_table_rForest_o &lt;- data.frame(
 
 print(comparison_table_rForest_o)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9488536   0.9583333   0.9390681
-## 2    Test 0.8859060   0.8309859   0.9358974</code></pre>
+## 1   Train 0.9505495   0.9662921   0.9354839
+## 2    Test 0.9060403   0.8309859   0.9743590</code></pre>
 <p>Porównamy wyniki uzyskane z lasów losowych oraz lasów losowych z
 zastosowaniem oversamplingu i undersamplingu.</p>
 <pre class="r"><code>print(comparison_table_rForest)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9380952   0.8368794   0.9892473
-## 2    Test 0.8590604   0.7323944   0.9743590</code></pre>
+## 1   Train 0.9428571   0.8865248   0.9713262
+## 2    Test 0.8657718   0.7183099   1.0000000</code></pre>
 <pre class="r"><code>print(comparison_table_rForest_u)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9473684   0.9290780   0.9652778
-## 2    Test 0.9463087   0.9014085   0.9871795</code></pre>
+## 1   Train 0.9219858   0.9078014   0.9361702
+## 2    Test 0.9060403   0.8309859   0.9743590</code></pre>
 <pre class="r"><code>print(comparison_table_rForest_o)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9488536   0.9583333   0.9390681
-## 2    Test 0.8859060   0.8309859   0.9358974</code></pre>
+## 1   Train 0.9505495   0.9662921   0.9354839
+## 2    Test 0.9060403   0.8309859   0.9743590</code></pre>
 <p>Co ciekawe, zauważamy że wyniki na zbiorze train przyjmują różne
 wartości dla wszystkich metod, jednak na zbiorze testowym wartości
 dokładności czułości i specyficzności uzyskanych za pomocą zwykłych
@@ -997,8 +1068,8 @@ comparison_table_glm_o &lt;- data.frame(
 
 print(comparison_table_glm_o)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9135802   0.9062500   0.9211470
-## 2    Test 0.9194631   0.8732394   0.9615385</code></pre>
+## 1   Train 0.9249084   0.9176030   0.9318996
+## 2    Test 0.9060403   0.8450704   0.9615385</code></pre>
 <p>Undersampling</p>
 <pre class="r"><code>model&lt;- caret::train(diagnosis ~ ., data = under_train, method = &quot;glm&quot;)
 pred_train &lt;- predict(model, newdata = under_train)
@@ -1022,8 +1093,8 @@ comparison_table_glm_u &lt;- data.frame(
 
 print(comparison_table_glm_u)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9403509   0.9290780   0.9513889
-## 2    Test 0.9261745   0.8732394   0.9743590</code></pre>
+## 1   Train 0.9468085   0.9361702   0.9574468
+## 2    Test 0.9463087   0.8873239   1.0000000</code></pre>
 <p>Porównamy wyniki uzyskane z modelu opartego na regresji logistycznej
 oraz z zastosowaniem oversamplingu i undersamplingu.</p>
 <pre class="r"><code>print(comparison_table_glm)</code></pre>
@@ -1032,12 +1103,12 @@ oraz z zastosowaniem oversamplingu i undersamplingu.</p>
 ## 2    Test 0.9060403   0.8028169   1.0000000</code></pre>
 <pre class="r"><code>print(comparison_table_glm_u)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9403509   0.9290780   0.9513889
-## 2    Test 0.9261745   0.8732394   0.9743590</code></pre>
+## 1   Train 0.9468085   0.9361702   0.9574468
+## 2    Test 0.9463087   0.8873239   1.0000000</code></pre>
 <pre class="r"><code>print(comparison_table_glm_o)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9135802   0.9062500   0.9211470
-## 2    Test 0.9194631   0.8732394   0.9615385</code></pre>
+## 1   Train 0.9249084   0.9176030   0.9318996
+## 2    Test 0.9060403   0.8450704   0.9615385</code></pre>
 <p>Tym razem na zbiorze treningowym każdy model daje inne wyniki,
 najlepszą dokładność uzyskał zwykły model regresji lo, najlepszą czułość
 model z użyciem metody undersampling a najwyższą specyficzność model
