@@ -21,9 +21,15 @@ library(caret)
 library(randomForest)
 library(ROSE)
 library(smotefamily)
+library(DALEX)
 ```
 
 ### Opis danych 
+```{r}
+data<-read.csv("Breast_cancer_data.csv", header = TRUE, sep = ",",dec = ".")
+head(data)
+```
+
 Dane na których możemy budować nasz model to:
 
 **zmienne objaśniające**:
@@ -43,10 +49,10 @@ Dane na których możemy budować nasz model to:
 **diagnosis**: Zmienna binarna (0-1) określająca czy zmiana nowotworowa zostałą rozpoznana jako łagodna (0) czy złośliwa (1) .
 
 ##### Analiza wpływu poszczególnych zmiennych na zmienną prognozowaną
-Na początku sprawdzamy, czy w naszym zbiorze danych zmienne objaśniające mają wpływ na zmienną objaśnianą. Wykorzystujemy do tego model regresji liniowej.
+Na początku sprawdzamy, czy w naszym zbiorze danych zmienne objaśniające mają wpływ na zmienną objaśnianą. Wykorzystujemy do tego model regresji logistycznej.
 ```{r message=FALSE, warning=FALSE}
 set.seed(1)
-data<-read.csv("Breast_cancer_data.csv", header = TRUE, sep = ",",dec = ".")
+
 data$diagnosis<- as.factor(data$diagnosis)
 index <- sample(nrow(data), 450, replace = F)
 train <- data[index,]
@@ -277,7 +283,7 @@ under_train <- ovun.sample(diagnosis ~ ., data = train, method="under",p=0.50 )$
 prop.table(table(under_train$diagnosis))
 ```
 Undersampling:
-```{r}
+```{r warning=FALSE}
 model <- randomForest(diagnosis ~ ., data = under_train%>%slice_sample(prop=0.4), ntree = 100)
 pred_train <- predict(model, newdata = under_train)
 conf_matrix_train <- confusionMatrix(pred_train, under_train$diagnosis, positive = "1")
@@ -301,7 +307,7 @@ comparison_table_rForest_u <- data.frame(
 print(comparison_table_rForest_u)
 ```
 Undersampling:
-```{r}
+```{r warning=FALSE}
 model <- randomForest(diagnosis ~ ., data = over_train%>%slice_sample(prop=0.4), ntree = 100)
 pred_train <- predict(model, newdata = over_train)
 conf_matrix_train <- confusionMatrix(pred_train, over_train$diagnosis, positive = "1")
@@ -335,3 +341,91 @@ Co ciekawe, zauważamy że wyniki na zbiorze train przyjmują różne wartości 
 ##### Model regersji logistycznej
 
 Ostatnim modelem utworzonym w nasym projekcie będzie model regresji logistycznej
+```{r warning=FALSE}
+model<- caret::train(diagnosis ~ ., data = train, method = "glm")
+summary(model)
+pred_train <- predict(model, newdata = train)
+conf_matrix_train <- confusionMatrix(pred_train, train$diagnosis, positive = "1")
+accuracy_train <- conf_matrix_train$overall["Accuracy"]
+sensitivity_train <- conf_matrix_train$byClass["Sensitivity"]
+specificity_train <- conf_matrix_train$byClass["Specificity"]
+
+pred_test <- predict(model, newdata = test)
+conf_matrix_test <- confusionMatrix(pred_test, test$diagnosis, positive = "1")
+accuracy_test <- conf_matrix_test$overall["Accuracy"]
+sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
+specificity_test <- conf_matrix_test$byClass["Specificity"]
+
+comparison_table_glm <- data.frame(
+  Dataset = c("Train", "Test"),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_glm)
+```
+Porównamy również, jak model regresji logistycznej działa na danych na zbiorze testowym rozszerzonym przez undersampling i oversampling.
+
+Oversampling
+```{r}
+```
+Undersampling:
+```{r warning=FALSE}
+model<- caret::train(diagnosis ~ ., data = over_train, method = "glm")
+pred_train <- predict(model, newdata = over_train)
+conf_matrix_train <- confusionMatrix(pred_train, over_train$diagnosis, positive = "1")
+accuracy_train <- conf_matrix_train$overall["Accuracy"]
+sensitivity_train <- conf_matrix_train$byClass["Sensitivity"]
+specificity_train <- conf_matrix_train$byClass["Specificity"]
+
+pred_test <- predict(model, newdata = test)
+conf_matrix_test <- confusionMatrix(pred_test, test$diagnosis, positive = "1")
+accuracy_test <- conf_matrix_test$overall["Accuracy"]
+sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
+specificity_test <- conf_matrix_test$byClass["Specificity"]
+
+comparison_table_glm_o <- data.frame(
+  Dataset = c("Train", "Test"),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_glm_o)
+```
+
+
+
+Undersampling
+
+```{r warning=FALSE}
+model<- caret::train(diagnosis ~ ., data = under_train, method = "glm")
+pred_train <- predict(model, newdata = under_train)
+conf_matrix_train <- confusionMatrix(pred_train, under_train$diagnosis, positive = "1")
+accuracy_train <- conf_matrix_train$overall["Accuracy"]
+sensitivity_train <- conf_matrix_train$byClass["Sensitivity"]
+specificity_train <- conf_matrix_train$byClass["Specificity"]
+
+pred_test <- predict(model, newdata = test)
+conf_matrix_test <- confusionMatrix(pred_test, test$diagnosis, positive = "1")
+accuracy_test <- conf_matrix_test$overall["Accuracy"]
+sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
+specificity_test <- conf_matrix_test$byClass["Specificity"]
+
+comparison_table_glm_u <- data.frame(
+  Dataset = c("Train", "Test"),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_glm_u)
+```
+Porównamy wyniki uzyskane z modelu opartego na  regresji logistycznej oraz z zastosowaniem oversamplingu i undersamplingu.
+```{r}
+print(comparison_table_glm)
+print(comparison_table_glm_u)
+print(comparison_table_glm_o)
+```
+Tym razem na zbiorze treningowym każdy model daje inne wyniki, najlepszą dokładność uzyskał zwykły model regresji lo, najlepszą czułość model z użyciem metody undersampling a najwyższą specyficzność model znów zwykły model regresji logistycznej. Na zbiorze testowym najlepszą dokładność uzyskał model z użyciem metody undersampling, najlepszą (ale taką samą) czułość uzyskały modele z użyciem metody undersampling i oversampling a najwyższą specyficzność model znów zwykły model regresji logistycznej. Podsumowując za najlepszy uznajemy model uzyskany metodą undersampling, bo przyjmuje on najwyższą czułość, przy możliwie wysokim poziomie dokładności ( wyższym niż przy użyciu metody oversampling).

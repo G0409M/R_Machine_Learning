@@ -482,10 +482,20 @@ library(e1071)
 library(caret)
 library(randomForest)
 library(ROSE)
-library(smotefamily)</code></pre>
+library(smotefamily)
+library(DALEX)</code></pre>
 </div>
 <div id="opis-danych" class="section level3">
 <h3>Opis danych</h3>
+<pre class="r"><code>data&lt;-read.csv(&quot;Breast_cancer_data.csv&quot;, header = TRUE, sep = &quot;,&quot;,dec = &quot;.&quot;)
+head(data)</code></pre>
+<pre><code>##   mean_radius mean_texture mean_perimeter mean_area mean_smoothness diagnosis
+## 1       17.99        10.38         122.80    1001.0         0.11840         0
+## 2       20.57        17.77         132.90    1326.0         0.08474         0
+## 3       19.69        21.25         130.00    1203.0         0.10960         0
+## 4       11.42        20.38          77.58     386.1         0.14250         0
+## 5       20.29        14.34         135.10    1297.0         0.10030         0
+## 6       12.45        15.70          82.57     477.1         0.12780         0</code></pre>
 <p>Dane na których możemy budować nasz model to:</p>
 <p><strong>zmienne objaśniające</strong>:</p>
 <p><strong>mean_radius</strong>: Średni rozmiar guza, istotny dla oceny
@@ -506,9 +516,9 @@ zmiana nowotworowa zostałą rozpoznana jako łagodna (0) czy złośliwa (1)
 <h5>Analiza wpływu poszczególnych zmiennych na zmienną prognozowaną</h5>
 <p>Na początku sprawdzamy, czy w naszym zbiorze danych zmienne
 objaśniające mają wpływ na zmienną objaśnianą. Wykorzystujemy do tego
-model regresji liniowej.</p>
+model regresji logistycznej.</p>
 <pre class="r"><code>set.seed(1)
-data&lt;-read.csv(&quot;Breast_cancer_data.csv&quot;, header = TRUE, sep = &quot;,&quot;,dec = &quot;.&quot;)
+
 data$diagnosis&lt;- as.factor(data$diagnosis)
 index &lt;- sample(nrow(data), 450, replace = F)
 train &lt;- data[index,]
@@ -841,11 +851,8 @@ sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
 specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
 
 pred_test &lt;- predict(model, newdata = test)
-conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)</code></pre>
-<pre><code>## Warning in confusionMatrix.default(pred_test, test$diagnosis, positive = &quot;1&quot;):
-## Levels are not in the same order for reference and data. Refactoring data to
-## match.</code></pre>
-<pre class="r"><code>accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
+conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)
+accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
 sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
 specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
 
@@ -869,11 +876,8 @@ sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
 specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
 
 pred_test &lt;- predict(model, newdata = test)
-conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)</code></pre>
-<pre><code>## Warning in confusionMatrix.default(pred_test, test$diagnosis, positive = &quot;1&quot;):
-## Levels are not in the same order for reference and data. Refactoring data to
-## match.</code></pre>
-<pre class="r"><code>accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
+conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)
+accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
 sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
 specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
 
@@ -920,6 +924,130 @@ oparciu o oversampled data.</p>
 <h5>Model regersji logistycznej</h5>
 <p>Ostatnim modelem utworzonym w nasym projekcie będzie model regresji
 logistycznej</p>
+<pre class="r"><code>model&lt;- caret::train(diagnosis ~ ., data = train, method = &quot;glm&quot;)
+summary(model)</code></pre>
+<pre><code>## 
+## Call:
+## NULL
+## 
+## Coefficients:
+##                 Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)       0.4012     0.4950   0.810  0.41766    
+## mean_radius      18.3524     7.1583   2.564  0.01035 *  
+## mean_texture     -1.7137     0.3092  -5.543 2.97e-08 ***
+## mean_perimeter  -13.4072     4.8824  -2.746  0.00603 ** 
+## mean_area       -11.3545     5.0643  -2.242  0.02496 *  
+## mean_smoothness  -1.7447     0.3380  -5.162 2.45e-07 ***
+## ---
+## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
+## 
+## (Dispersion parameter for binomial family taken to be 1)
+## 
+##     Null deviance: 536.05  on 419  degrees of freedom
+## Residual deviance: 130.52  on 414  degrees of freedom
+## AIC: 142.52
+## 
+## Number of Fisher Scoring iterations: 8</code></pre>
+<pre class="r"><code>pred_train &lt;- predict(model, newdata = train)
+conf_matrix_train &lt;- confusionMatrix(pred_train, train$diagnosis, positive = &quot;1&quot;)
+accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
+sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
+specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
+
+pred_test &lt;- predict(model, newdata = test)
+conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)
+accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
+sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
+specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
+
+comparison_table_glm &lt;- data.frame(
+  Dataset = c(&quot;Train&quot;, &quot;Test&quot;),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_glm)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9452381   0.8865248   0.9749104
+## 2    Test 0.9060403   0.8028169   1.0000000</code></pre>
+<p>Porównamy również, jak model regresji logistycznej działa na danych
+na zbiorze testowym rozszerzonym przez undersampling i oversampling.</p>
+<p>Oversampling</p>
+<p>Undersampling:</p>
+<pre class="r"><code>model&lt;- caret::train(diagnosis ~ ., data = over_train, method = &quot;glm&quot;)
+pred_train &lt;- predict(model, newdata = over_train)
+conf_matrix_train &lt;- confusionMatrix(pred_train, over_train$diagnosis, positive = &quot;1&quot;)
+accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
+sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
+specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
+
+pred_test &lt;- predict(model, newdata = test)
+conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)
+accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
+sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
+specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
+
+comparison_table_glm_o &lt;- data.frame(
+  Dataset = c(&quot;Train&quot;, &quot;Test&quot;),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_glm_o)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9135802   0.9062500   0.9211470
+## 2    Test 0.9194631   0.8732394   0.9615385</code></pre>
+<p>Undersampling</p>
+<pre class="r"><code>model&lt;- caret::train(diagnosis ~ ., data = under_train, method = &quot;glm&quot;)
+pred_train &lt;- predict(model, newdata = under_train)
+conf_matrix_train &lt;- confusionMatrix(pred_train, under_train$diagnosis, positive = &quot;1&quot;)
+accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
+sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
+specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
+
+pred_test &lt;- predict(model, newdata = test)
+conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)
+accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
+sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
+specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
+
+comparison_table_glm_u &lt;- data.frame(
+  Dataset = c(&quot;Train&quot;, &quot;Test&quot;),
+  Accuracy = c(accuracy_train, accuracy_test),
+  Sensitivity = c(sensitivity_train, sensitivity_test),
+  Specificity = c(specificity_train, specificity_test)
+)
+
+print(comparison_table_glm_u)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9403509   0.9290780   0.9513889
+## 2    Test 0.9261745   0.8732394   0.9743590</code></pre>
+<p>Porównamy wyniki uzyskane z modelu opartego na regresji logistycznej
+oraz z zastosowaniem oversamplingu i undersamplingu.</p>
+<pre class="r"><code>print(comparison_table_glm)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9452381   0.8865248   0.9749104
+## 2    Test 0.9060403   0.8028169   1.0000000</code></pre>
+<pre class="r"><code>print(comparison_table_glm_u)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9403509   0.9290780   0.9513889
+## 2    Test 0.9261745   0.8732394   0.9743590</code></pre>
+<pre class="r"><code>print(comparison_table_glm_o)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9135802   0.9062500   0.9211470
+## 2    Test 0.9194631   0.8732394   0.9615385</code></pre>
+<p>Tym razem na zbiorze treningowym każdy model daje inne wyniki,
+najlepszą dokładność uzyskał zwykły model regresji lo, najlepszą czułość
+model z użyciem metody undersampling a najwyższą specyficzność model
+znów zwykły model regresji logistycznej. Na zbiorze testowym najlepszą
+dokładność uzyskał model z użyciem metody undersampling, najlepszą (ale
+taką samą) czułość uzyskały modele z użyciem metody undersampling i
+oversampling a najwyższą specyficzność model znów zwykły model regresji
+logistycznej. Podsumowując za najlepszy uznajemy model uzyskany metodą
+undersampling, bo przyjmuje on najwyższą czułość, przy możliwie wysokim
+poziomie dokładności ( wyższym niż przy użyciu metody oversampling).</p>
 </div>
 </div>
 </div>
