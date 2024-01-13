@@ -11,7 +11,7 @@
 
 <meta name="author" content="Gabriela Maślanka, Karolina Gajewska" />
 
-<meta name="date" content="2024-01-02" />
+<meta name="date" content="2024-01-13" />
 
 <title>Project</title>
 
@@ -464,7 +464,7 @@ display: none;
 
 <h1 class="title toc-ignore">Project</h1>
 <h4 class="author">Gabriela Maślanka, Karolina Gajewska</h4>
-<h4 class="date">2024-01-02</h4>
+<h4 class="date">2024-01-13</h4>
 
 </div>
 
@@ -677,6 +677,8 @@ for (nazwa_zmiennej in colnames(data_positive)) {
 data_positive_clear&lt;- usuń_odstające(data_positive)
 data_negative_clear&lt;- usuń_odstające(data_negative)
 data_clear &lt;- rbind(data_positive_clear, data_negative_clear)</code></pre>
+<p>Po usunięciu wartości odstających modele osiągają lepszą dokładność i
+czułość.</p>
 </div>
 </div>
 <div id="podział-na-zbiór-uczący-oraz-testowy" class="section level4">
@@ -735,13 +737,14 @@ pozytywnych (66%) niż w zbiorze testowym (52%), jednak różnica ta nie
 jest wielka.</p>
 <div id="standaryzujemy-dane" class="section level5">
 <h5>Standaryzujemy dane</h5>
-<pre class="r"><code>train$mean_radius&lt;- scale(train$mean_radius)
+<pre class="r"><code>train_glm&lt;-train
+train$mean_radius&lt;- scale(train$mean_radius)
 train$mean_texture&lt;- scale(train$mean_texture)
 train$mean_perimeter&lt;- scale(train$mean_perimeter)
 train$mean_area&lt;- scale(train$mean_area)
 train$mean_smoothness&lt;- scale(train$mean_smoothness)
 
-
+test_glm&lt;- test
 test$mean_radius&lt;- scale(test$mean_radius)
 test$mean_texture&lt;- scale(test$mean_texture)
 test$mean_perimeter&lt;- scale(test$mean_perimeter)
@@ -817,7 +820,7 @@ gdybyśmy próbowali jeszcze dokładniej zbalansować nasze dane.</p>
 <p>Dla porónania wykonamy oversampling i undersampling, aby sprawdzić
 czy model będzie wtedy lepszy.</p>
 <p>Undersampling:</p>
-<pre class="r"><code>model &lt;- svm(formula = diagnosis ~ ., data = train, kernel = &quot;linear&quot;, cost = 0.41)
+<pre class="r"><code>model &lt;- svm(formula = diagnosis ~ ., data = under_train, kernel = &quot;linear&quot;, cost = 0.41)
 pred_train &lt;- predict(model, newdata = under_train)
 conf_matrix_train &lt;- confusionMatrix(pred_train, under_train$diagnosis, positive = &quot;1&quot;)
 accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
@@ -839,10 +842,10 @@ comparison_table_svm_u &lt;- data.frame(
 
 print(comparison_table_svm_u)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9078014   0.8439716   0.9716312
-## 2    Test 0.8859060   0.7746479   0.9871795</code></pre>
+## 1   Train 0.9290780   0.9290780   0.9290780
+## 2    Test 0.9328859   0.9014085   0.9615385</code></pre>
 <p>Oversampling:</p>
-<pre class="r"><code>model &lt;- svm(formula = diagnosis ~ ., data = train, kernel = &quot;linear&quot;, cost = 0.41)
+<pre class="r"><code>model &lt;- svm(formula = diagnosis ~ ., data = over_train, kernel = &quot;linear&quot;, cost = 0.41)
 pred_train &lt;- predict(model, newdata = over_train)
 conf_matrix_train &lt;- confusionMatrix(pred_train, over_train$diagnosis, positive = &quot;1&quot;)
 accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
@@ -864,8 +867,8 @@ comparison_table_svm_o &lt;- data.frame(
 
 print(comparison_table_svm_o)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9084249   0.8389513   0.9749104
-## 2    Test 0.8859060   0.7746479   0.9871795</code></pre>
+## 1   Train 0.9175824   0.9176030   0.9175627
+## 2    Test 0.9127517   0.8591549   0.9615385</code></pre>
 <p>Porównamy wyniki uzyskane z lasów losowych oraz lasów losowych z
 zastosowaniem oversamplingu i undersamplingu.</p>
 <pre class="r"><code>print(comparison_table_svm)</code></pre>
@@ -874,16 +877,18 @@ zastosowaniem oversamplingu i undersamplingu.</p>
 ## 2    Test 0.8859060   0.7746479   0.9871795</code></pre>
 <pre class="r"><code>print(comparison_table_svm_u)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9078014   0.8439716   0.9716312
-## 2    Test 0.8859060   0.7746479   0.9871795</code></pre>
+## 1   Train 0.9290780   0.9290780   0.9290780
+## 2    Test 0.9328859   0.9014085   0.9615385</code></pre>
 <pre class="r"><code>print(comparison_table_svm_o)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9084249   0.8389513   0.9749104
-## 2    Test 0.8859060   0.7746479   0.9871795</code></pre>
-<p>W tym wypadku wartości na zbiorze treningowym wychodzą różne dla
-wszystkich metod, jednak na zbiorze testowym wszystkie metody dają
-dokładnie takie same wartości, więc w tym wypadku za najlepszy model
-uznamy model bez dodatkowego balansowania danych.</p>
+## 1   Train 0.9175824   0.9176030   0.9175627
+## 2    Test 0.9127517   0.8591549   0.9615385</code></pre>
+<p>Przy użyciu metody SVM najlepsze wartości dokładności i czułości
+otrzymujemy przy zastosowaniu metody oversamplingu, a jednocześnie przy
+tej metodzie wartości czułości i specyficzności najmniej różnią się od
+siebie na zbiorze uczącym i testowym. Zwykły model SVM może być aż za
+bardzo dopasowany do danych uczących, bo różnica między zbiorem
+treningowym i testowym jest znacząca.</p>
 </div>
 <div id="lasy-losowe" class="section level5">
 <h5>Lasy losowe</h5>
@@ -909,8 +914,8 @@ comparison_table_rForest &lt;- data.frame(
 
 print(comparison_table_rForest)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9428571   0.8865248   0.9713262
-## 2    Test 0.8657718   0.7183099   1.0000000</code></pre>
+## 1   Train 0.9452381   0.8794326   0.9784946
+## 2    Test 0.8724832   0.7464789   0.9871795</code></pre>
 <p>Dla porónania wykonamy oversampling, aby sprawdzić czy model będzie
 wtedy lepszy.</p>
 <p>Undersampling:</p>
@@ -936,8 +941,8 @@ comparison_table_rForest_u &lt;- data.frame(
 
 print(comparison_table_rForest_u)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9219858   0.9078014   0.9361702
-## 2    Test 0.9060403   0.8309859   0.9743590</code></pre>
+## 1   Train 0.9290780   0.9716312   0.8865248
+## 2    Test 0.9194631   0.9014085   0.9358974</code></pre>
 <p>Oversampling:</p>
 <pre class="r"><code>model &lt;- randomForest(diagnosis ~ ., data = over_train%&gt;%slice_sample(prop=0.4), ntree = 100)
 pred_train &lt;- predict(model, newdata = over_train)
@@ -961,22 +966,22 @@ comparison_table_rForest_o &lt;- data.frame(
 
 print(comparison_table_rForest_o)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9505495   0.9662921   0.9354839
-## 2    Test 0.9060403   0.8309859   0.9743590</code></pre>
+## 1   Train 0.9578755   0.9625468    0.953405
+## 2    Test 0.9060403   0.8309859    0.974359</code></pre>
 <p>Porównamy wyniki uzyskane z lasów losowych oraz lasów losowych z
 zastosowaniem oversamplingu i undersamplingu.</p>
 <pre class="r"><code>print(comparison_table_rForest)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9428571   0.8865248   0.9713262
-## 2    Test 0.8657718   0.7183099   1.0000000</code></pre>
+## 1   Train 0.9452381   0.8794326   0.9784946
+## 2    Test 0.8724832   0.7464789   0.9871795</code></pre>
 <pre class="r"><code>print(comparison_table_rForest_u)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9219858   0.9078014   0.9361702
-## 2    Test 0.9060403   0.8309859   0.9743590</code></pre>
+## 1   Train 0.9290780   0.9716312   0.8865248
+## 2    Test 0.9194631   0.9014085   0.9358974</code></pre>
 <pre class="r"><code>print(comparison_table_rForest_o)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9505495   0.9662921   0.9354839
-## 2    Test 0.9060403   0.8309859   0.9743590</code></pre>
+## 1   Train 0.9578755   0.9625468    0.953405
+## 2    Test 0.9060403   0.8309859    0.974359</code></pre>
 <p>Co ciekawe, zauważamy że wyniki na zbiorze train przyjmują różne
 wartości dla wszystkich metod, jednak na zbiorze testowym wartości
 dokładności czułości i specyficzności uzyskanych za pomocą zwykłych

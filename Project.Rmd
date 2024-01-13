@@ -157,6 +157,7 @@ data_negative_clear<- usuń_odstające(data_negative)
 data_clear <- rbind(data_positive_clear, data_negative_clear)
 
 ```
+Po usunięciu wartości odstających modele osiągają lepszą dokładność i czułość.
 
 
 #### Podział na zbiór uczący oraz testowy
@@ -178,14 +179,14 @@ prop.table(table(test$diagnosis))
 
 ##### Standaryzujemy dane
 ```{r}
-
+train_glm<-train
 train$mean_radius<- scale(train$mean_radius)
 train$mean_texture<- scale(train$mean_texture)
 train$mean_perimeter<- scale(train$mean_perimeter)
 train$mean_area<- scale(train$mean_area)
 train$mean_smoothness<- scale(train$mean_smoothness)
 
-
+test_glm<- test
 test$mean_radius<- scale(test$mean_radius)
 test$mean_texture<- scale(test$mean_texture)
 test$mean_perimeter<- scale(test$mean_perimeter)
@@ -256,12 +257,18 @@ over_train <- ovun.sample(diagnosis ~ ., data = train, method="over",p=0.50 )$da
 prop.table(table(over_train$diagnosis))
 under_train <- ovun.sample(diagnosis ~ ., data = train, method="under",p=0.50 )$data
 prop.table(table(under_train$diagnosis))
+
+
+over_train_glm <- ovun.sample(diagnosis ~ ., data = train_glm, method="over",p=0.50 )$data
+prop.table(table(over_train_glm$diagnosis))
+under_train_glm <- ovun.sample(diagnosis ~ ., data = train_glm, method="under",p=0.50 )$data
+prop.table(table(under_train_glm$diagnosis))
 ```
 Dla porónania wykonamy oversampling i undersampling, aby sprawdzić czy model będzie wtedy lepszy.
 
 Undersampling:
 ```{r warning=FALSE}
-model <- svm(formula = diagnosis ~ ., data = train, kernel = "linear", cost = 0.41)
+model <- svm(formula = diagnosis ~ ., data = under_train, kernel = "linear", cost = 0.41)
 pred_train <- predict(model, newdata = under_train)
 conf_matrix_train <- confusionMatrix(pred_train, under_train$diagnosis, positive = "1")
 accuracy_train <- conf_matrix_train$overall["Accuracy"]
@@ -285,7 +292,7 @@ print(comparison_table_svm_u)
 ```
 Oversampling:
 ```{r warning=FALSE}
-model <- svm(formula = diagnosis ~ ., data = train, kernel = "linear", cost = 0.41)
+model <- svm(formula = diagnosis ~ ., data = over_train, kernel = "linear", cost = 0.41)
 pred_train <- predict(model, newdata = over_train)
 conf_matrix_train <- confusionMatrix(pred_train, over_train$diagnosis, positive = "1")
 accuracy_train <- conf_matrix_train$overall["Accuracy"]
@@ -312,8 +319,9 @@ Porównamy wyniki uzyskane z lasów losowych oraz lasów losowych z zastosowanie
 print(comparison_table_svm)
 print(comparison_table_svm_u)
 print(comparison_table_svm_o)
+
 ```
-W tym wypadku wartości na zbiorze treningowym wychodzą różne dla wszystkich metod, jednak na zbiorze testowym wszystkie metody dają dokładnie takie same wartości, więc w tym wypadku za najlepszy model uznamy model bez dodatkowego balansowania danych.
+Przy użyciu metody SVM najlepsze wartości dokładności i czułości otrzymujemy przy zastosowaniu metody oversamplingu, a jednocześnie przy tej metodzie wartości czułości i specyficzności najmniej różnią się od siebie na zbiorze uczącym i testowym. Zwykły model SVM może być aż za bardzo dopasowany do danych uczących, bo różnica między zbiorem treningowym i testowym jest znacząca.
 
 
 ##### Lasy losowe
