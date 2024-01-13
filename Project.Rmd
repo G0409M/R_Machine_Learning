@@ -320,6 +320,8 @@ print(comparison_table_svm)
 print(comparison_table_svm_u)
 print(comparison_table_svm_o)
 
+choosen_svm<- comparison_table_svm_o
+
 ```
 Przy użyciu metody SVM najlepsze wartości dokładności i czułości otrzymujemy przy zastosowaniu metody oversamplingu, a jednocześnie przy tej metodzie wartości czułości i specyficzności najmniej różnią się od siebie na zbiorze uczącym i testowym. Zwykły model SVM może być aż za bardzo dopasowany do danych uczących, bo różnica między zbiorem treningowym i testowym jest znacząca.
 
@@ -403,23 +405,25 @@ Porównamy wyniki uzyskane z lasów losowych oraz lasów losowych z zastosowanie
 print(comparison_table_rForest)
 print(comparison_table_rForest_u)
 print(comparison_table_rForest_o)
+
+choosen_rForest<- comparison_table_rForest_u
 ```
-Co ciekawe, zauważamy że wyniki na zbiorze train przyjmują różne wartości dla wszystkich metod, jednak na zbiorze testowym wartości dokładności czułości i specyficzności uzyskanych za pomocą zwykłych lasów losowych jak i lasów losowych z użyciem undersamplingu przyjmują te same wartości, mimo że na zbiorze testowym przy użyciu undersamplingu uzyskaliśmy wyższe wartości dokładności i specyficzności. Przy użyciu oversamplingu otrzymaliśmy zdecydowanie lepsze wartości na zbiorze testowym w poróznaniu ze zwykłymi lasami losowymi, ale na zbiorze testowym model stworzony na rozszerzonym zbiorze danych osiągnął gorszą specyficzność, jednakże lepszą (jak i również najlepszą) czułość, dlatego biorąc pod uwagę że mamy styczność z danymi medycznymi jako najlepszy wybierzemy model z najwyższą czułością, więc model stworzony w oparciu o oversampled data.
+Tym razem zauważamy, że najlepszą dokładność na zbiorze testowym przyjmują dane z użyciem metody oversample i czułość najlepszą czułość na zbiorze testowym przyjmuje model z użyciem undersamplingu. Jeśli chodzi jednak o zbiór testowy, dokładność i czułość najlepsza jest dla modelu z użyciem undersamplingu, dlatego ten model zostanie wybrany za najlepszy.
 
 ##### Model regersji logistycznej
 
 Ostatnim modelem utworzonym w nasym projekcie będzie model regresji logistycznej
 ```{r warning=FALSE}
-model<- caret::train(diagnosis ~ ., data = train, method = "glm")
+model<- caret::train(diagnosis ~ ., data = train_glm, method = "glm")
 summary(model)
-pred_train <- predict(model, newdata = train)
-conf_matrix_train <- confusionMatrix(pred_train, train$diagnosis, positive = "1")
+pred_train <- predict(model, newdata = train_glm)
+conf_matrix_train <- confusionMatrix(pred_train, train_glm$diagnosis, positive = "1")
 accuracy_train <- conf_matrix_train$overall["Accuracy"]
 sensitivity_train <- conf_matrix_train$byClass["Sensitivity"]
 specificity_train <- conf_matrix_train$byClass["Specificity"]
 
-pred_test <- predict(model, newdata = test)
-conf_matrix_test <- confusionMatrix(pred_test, test$diagnosis, positive = "1")
+pred_test <- predict(model, newdata = test_glm)
+conf_matrix_test <- confusionMatrix(pred_test, test_glm$diagnosis, positive = "1")
 accuracy_test <- conf_matrix_test$overall["Accuracy"]
 sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
 specificity_test <- conf_matrix_test$byClass["Specificity"]
@@ -435,20 +439,17 @@ print(comparison_table_glm)
 ```
 Porównamy również, jak model regresji logistycznej działa na danych na zbiorze testowym rozszerzonym przez undersampling i oversampling.
 
-Oversampling
-```{r}
-```
-Undersampling:
+Oversampling: 
 ```{r warning=FALSE}
-model<- caret::train(diagnosis ~ ., data = over_train, method = "glm")
-pred_train <- predict(model, newdata = over_train)
-conf_matrix_train <- confusionMatrix(pred_train, over_train$diagnosis, positive = "1")
+model<- caret::train(diagnosis ~ ., data = over_train_glm, method = "glm")
+pred_train <- predict(model, newdata = over_train_glm)
+conf_matrix_train <- confusionMatrix(pred_train, over_train_glm$diagnosis, positive = "1")
 accuracy_train <- conf_matrix_train$overall["Accuracy"]
 sensitivity_train <- conf_matrix_train$byClass["Sensitivity"]
 specificity_train <- conf_matrix_train$byClass["Specificity"]
 
-pred_test <- predict(model, newdata = test)
-conf_matrix_test <- confusionMatrix(pred_test, test$diagnosis, positive = "1")
+pred_test <- predict(model, newdata = test_glm)
+conf_matrix_test <- confusionMatrix(pred_test, test_glm$diagnosis, positive = "1")
 accuracy_test <- conf_matrix_test$overall["Accuracy"]
 sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
 specificity_test <- conf_matrix_test$byClass["Specificity"]
@@ -465,18 +466,18 @@ print(comparison_table_glm_o)
 
 
 
-Undersampling
+Undersampling:
 
 ```{r warning=FALSE}
-model<- caret::train(diagnosis ~ ., data = under_train, method = "glm")
-pred_train <- predict(model, newdata = under_train)
-conf_matrix_train <- confusionMatrix(pred_train, under_train$diagnosis, positive = "1")
+model<- caret::train(diagnosis ~ ., data = under_train_glm, method = "glm")
+pred_train <- predict(model, newdata = under_train_glm)
+conf_matrix_train <- confusionMatrix(pred_train, under_train_glm$diagnosis, positive = "1")
 accuracy_train <- conf_matrix_train$overall["Accuracy"]
 sensitivity_train <- conf_matrix_train$byClass["Sensitivity"]
 specificity_train <- conf_matrix_train$byClass["Specificity"]
 
-pred_test <- predict(model, newdata = test)
-conf_matrix_test <- confusionMatrix(pred_test, test$diagnosis, positive = "1")
+pred_test <- predict(model, newdata = test_glm)
+conf_matrix_test <- confusionMatrix(pred_test, test_glm$diagnosis, positive = "1")
 accuracy_test <- conf_matrix_test$overall["Accuracy"]
 sensitivity_test <- conf_matrix_test$byClass["Sensitivity"]
 specificity_test <- conf_matrix_test$byClass["Specificity"]
@@ -495,5 +496,17 @@ Porównamy wyniki uzyskane z modelu opartego na  regresji logistycznej oraz z za
 print(comparison_table_glm)
 print(comparison_table_glm_u)
 print(comparison_table_glm_o)
+choosen_glm<-comparison_table_glm_u
 ```
-Tym razem na zbiorze treningowym każdy model daje inne wyniki, najlepszą dokładność uzyskał zwykły model regresji lo, najlepszą czułość model z użyciem metody undersampling a najwyższą specyficzność model znów zwykły model regresji logistycznej. Na zbiorze testowym najlepszą dokładność uzyskał model z użyciem metody undersampling, najlepszą (ale taką samą) czułość uzyskały modele z użyciem metody undersampling i oversampling a najwyższą specyficzność model znów zwykły model regresji logistycznej. Podsumowując za najlepszy uznajemy model uzyskany metodą undersampling, bo przyjmuje on najwyższą czułość, przy możliwie wysokim poziomie dokładności ( wyższym niż przy użyciu metody oversampling).
+Tym razem na zbiorze treningowym każdy model daje inne wyniki, najlepszą dokładność na zbiorze treningowym uzyskał zwykły model regresji logistycznej, najlepszą czułość model z użyciem metody undersampling a najwyższą specyficzność model znów zwykły model regresji logistycznej. Na zbiorze testowym najlepszą dokładność uzyskał model z użyciem metody undersampling, najlepszą (ale taką samą) czułość uzyskały modele z użyciem metody undersampling i oversampling a najwyższą specyficzność model znów zwykły model regresji logistycznej. Podsumowując za najlepszy uznajemy model uzyskany metodą undersampling, bo przyjmuje on najwyższą czułość, przy możliwie wysokim poziomie dokładności ( wyższym niż przy użyciu metody oversampling).
+
+### Porównanie trzech modeli:
+```{r}
+cat("Model SVM z użyciem metody oversampling")
+print(choosen_svm)
+cat("Model Random Forest z użyciem metody undesampling")
+print(choosen_rForest)
+cat("Model Regresji Logistycznej z użyciem metody undesampling")
+print(choosen_glm)
+```
+

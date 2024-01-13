@@ -883,6 +883,7 @@ zastosowaniem oversamplingu i undersamplingu.</p>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
 ## 1   Train 0.9175824   0.9176030   0.9175627
 ## 2    Test 0.9127517   0.8591549   0.9615385</code></pre>
+<pre class="r"><code>choosen_svm&lt;- comparison_table_svm_o</code></pre>
 <p>Przy użyciu metody SVM najlepsze wartości dokładności i czułości
 otrzymujemy przy zastosowaniu metody oversamplingu, a jednocześnie przy
 tej metodzie wartości czułości i specyficzności najmniej różnią się od
@@ -982,38 +983,32 @@ zastosowaniem oversamplingu i undersamplingu.</p>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
 ## 1   Train 0.9578755   0.9625468    0.953405
 ## 2    Test 0.9060403   0.8309859    0.974359</code></pre>
-<p>Co ciekawe, zauważamy że wyniki na zbiorze train przyjmują różne
-wartości dla wszystkich metod, jednak na zbiorze testowym wartości
-dokładności czułości i specyficzności uzyskanych za pomocą zwykłych
-lasów losowych jak i lasów losowych z użyciem undersamplingu przyjmują
-te same wartości, mimo że na zbiorze testowym przy użyciu undersamplingu
-uzyskaliśmy wyższe wartości dokładności i specyficzności. Przy użyciu
-oversamplingu otrzymaliśmy zdecydowanie lepsze wartości na zbiorze
-testowym w poróznaniu ze zwykłymi lasami losowymi, ale na zbiorze
-testowym model stworzony na rozszerzonym zbiorze danych osiągnął gorszą
-specyficzność, jednakże lepszą (jak i również najlepszą) czułość,
-dlatego biorąc pod uwagę że mamy styczność z danymi medycznymi jako
-najlepszy wybierzemy model z najwyższą czułością, więc model stworzony w
-oparciu o oversampled data.</p>
+<pre class="r"><code>choosen_rForest&lt;- comparison_table_rForest_u</code></pre>
+<p>Tym razem zauważamy, że najlepszą dokładność na zbiorze testowym
+przyjmują dane z użyciem metody oversample i czułość najlepszą czułość
+na zbiorze testowym przyjmuje model z użyciem undersamplingu. Jeśli
+chodzi jednak o zbiór testowy, dokładność i czułość najlepsza jest dla
+modelu z użyciem undersamplingu, dlatego ten model zostanie wybrany za
+najlepszy.</p>
 </div>
 <div id="model-regersji-logistycznej" class="section level5">
 <h5>Model regersji logistycznej</h5>
 <p>Ostatnim modelem utworzonym w nasym projekcie będzie model regresji
 logistycznej</p>
-<pre class="r"><code>model&lt;- caret::train(diagnosis ~ ., data = train, method = &quot;glm&quot;)
+<pre class="r"><code>model&lt;- caret::train(diagnosis ~ ., data = train_glm, method = &quot;glm&quot;)
 summary(model)</code></pre>
 <pre><code>## 
 ## Call:
 ## NULL
 ## 
 ## Coefficients:
-##                 Estimate Std. Error z value Pr(&gt;|z|)    
-## (Intercept)       0.4012     0.4950   0.810  0.41766    
-## mean_radius      18.3524     7.1583   2.564  0.01035 *  
-## mean_texture     -1.7137     0.3092  -5.543 2.97e-08 ***
-## mean_perimeter  -13.4072     4.8824  -2.746  0.00603 ** 
-## mean_area       -11.3545     5.0643  -2.242  0.02496 *  
-## mean_smoothness  -1.7447     0.3380  -5.162 2.45e-07 ***
+##                   Estimate Std. Error z value Pr(&gt;|z|)    
+## (Intercept)       18.19933    9.75856   1.865  0.06219 .  
+## mean_radius        5.38037    2.09861   2.564  0.01035 *  
+## mean_texture      -0.41639    0.07512  -5.543 2.97e-08 ***
+## mean_perimeter    -0.57144    0.20810  -2.746  0.00603 ** 
+## mean_area         -0.03352    0.01495  -2.242  0.02496 *  
+## mean_smoothness -123.01404   23.83292  -5.162 2.45e-07 ***
 ## ---
 ## Signif. codes:  0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1 &#39; &#39; 1
 ## 
@@ -1024,14 +1019,14 @@ summary(model)</code></pre>
 ## AIC: 142.52
 ## 
 ## Number of Fisher Scoring iterations: 8</code></pre>
-<pre class="r"><code>pred_train &lt;- predict(model, newdata = train)
-conf_matrix_train &lt;- confusionMatrix(pred_train, train$diagnosis, positive = &quot;1&quot;)
+<pre class="r"><code>pred_train &lt;- predict(model, newdata = train_glm)
+conf_matrix_train &lt;- confusionMatrix(pred_train, train_glm$diagnosis, positive = &quot;1&quot;)
 accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
 sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
 specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
 
-pred_test &lt;- predict(model, newdata = test)
-conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)
+pred_test &lt;- predict(model, newdata = test_glm)
+conf_matrix_test &lt;- confusionMatrix(pred_test, test_glm$diagnosis, positive = &quot;1&quot;)
 accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
 sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
 specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
@@ -1046,20 +1041,19 @@ comparison_table_glm &lt;- data.frame(
 print(comparison_table_glm)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
 ## 1   Train 0.9452381   0.8865248   0.9749104
-## 2    Test 0.9060403   0.8028169   1.0000000</code></pre>
+## 2    Test 0.9328859   0.9295775   0.9358974</code></pre>
 <p>Porównamy również, jak model regresji logistycznej działa na danych
 na zbiorze testowym rozszerzonym przez undersampling i oversampling.</p>
-<p>Oversampling</p>
-<p>Undersampling:</p>
-<pre class="r"><code>model&lt;- caret::train(diagnosis ~ ., data = over_train, method = &quot;glm&quot;)
-pred_train &lt;- predict(model, newdata = over_train)
-conf_matrix_train &lt;- confusionMatrix(pred_train, over_train$diagnosis, positive = &quot;1&quot;)
+<p>Oversampling:</p>
+<pre class="r"><code>model&lt;- caret::train(diagnosis ~ ., data = over_train_glm, method = &quot;glm&quot;)
+pred_train &lt;- predict(model, newdata = over_train_glm)
+conf_matrix_train &lt;- confusionMatrix(pred_train, over_train_glm$diagnosis, positive = &quot;1&quot;)
 accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
 sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
 specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
 
-pred_test &lt;- predict(model, newdata = test)
-conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)
+pred_test &lt;- predict(model, newdata = test_glm)
+conf_matrix_test &lt;- confusionMatrix(pred_test, test_glm$diagnosis, positive = &quot;1&quot;)
 accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
 sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
 specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
@@ -1073,18 +1067,18 @@ comparison_table_glm_o &lt;- data.frame(
 
 print(comparison_table_glm_o)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9249084   0.9176030   0.9318996
-## 2    Test 0.9060403   0.8450704   0.9615385</code></pre>
-<p>Undersampling</p>
-<pre class="r"><code>model&lt;- caret::train(diagnosis ~ ., data = under_train, method = &quot;glm&quot;)
-pred_train &lt;- predict(model, newdata = under_train)
-conf_matrix_train &lt;- confusionMatrix(pred_train, under_train$diagnosis, positive = &quot;1&quot;)
+## 1   Train 0.9047619   0.8888889   0.9211470
+## 2    Test 0.9395973   0.9718310   0.9102564</code></pre>
+<p>Undersampling:</p>
+<pre class="r"><code>model&lt;- caret::train(diagnosis ~ ., data = under_train_glm, method = &quot;glm&quot;)
+pred_train &lt;- predict(model, newdata = under_train_glm)
+conf_matrix_train &lt;- confusionMatrix(pred_train, under_train_glm$diagnosis, positive = &quot;1&quot;)
 accuracy_train &lt;- conf_matrix_train$overall[&quot;Accuracy&quot;]
 sensitivity_train &lt;- conf_matrix_train$byClass[&quot;Sensitivity&quot;]
 specificity_train &lt;- conf_matrix_train$byClass[&quot;Specificity&quot;]
 
-pred_test &lt;- predict(model, newdata = test)
-conf_matrix_test &lt;- confusionMatrix(pred_test, test$diagnosis, positive = &quot;1&quot;)
+pred_test &lt;- predict(model, newdata = test_glm)
+conf_matrix_test &lt;- confusionMatrix(pred_test, test_glm$diagnosis, positive = &quot;1&quot;)
 accuracy_test &lt;- conf_matrix_test$overall[&quot;Accuracy&quot;]
 sensitivity_test &lt;- conf_matrix_test$byClass[&quot;Sensitivity&quot;]
 specificity_test &lt;- conf_matrix_test$byClass[&quot;Specificity&quot;]
@@ -1098,34 +1092,57 @@ comparison_table_glm_u &lt;- data.frame(
 
 print(comparison_table_glm_u)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9468085   0.9361702   0.9574468
-## 2    Test 0.9463087   0.8873239   1.0000000</code></pre>
+## 1   Train 0.9391635   0.9432624   0.9344262
+## 2    Test 0.9463087   0.9859155   0.9102564</code></pre>
 <p>Porównamy wyniki uzyskane z modelu opartego na regresji logistycznej
 oraz z zastosowaniem oversamplingu i undersamplingu.</p>
 <pre class="r"><code>print(comparison_table_glm)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
 ## 1   Train 0.9452381   0.8865248   0.9749104
-## 2    Test 0.9060403   0.8028169   1.0000000</code></pre>
+## 2    Test 0.9328859   0.9295775   0.9358974</code></pre>
 <pre class="r"><code>print(comparison_table_glm_u)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9468085   0.9361702   0.9574468
-## 2    Test 0.9463087   0.8873239   1.0000000</code></pre>
+## 1   Train 0.9391635   0.9432624   0.9344262
+## 2    Test 0.9463087   0.9859155   0.9102564</code></pre>
 <pre class="r"><code>print(comparison_table_glm_o)</code></pre>
 <pre><code>##   Dataset  Accuracy Sensitivity Specificity
-## 1   Train 0.9249084   0.9176030   0.9318996
-## 2    Test 0.9060403   0.8450704   0.9615385</code></pre>
+## 1   Train 0.9047619   0.8888889   0.9211470
+## 2    Test 0.9395973   0.9718310   0.9102564</code></pre>
+<pre class="r"><code>choosen_glm&lt;-comparison_table_glm_u</code></pre>
 <p>Tym razem na zbiorze treningowym każdy model daje inne wyniki,
-najlepszą dokładność uzyskał zwykły model regresji lo, najlepszą czułość
-model z użyciem metody undersampling a najwyższą specyficzność model
-znów zwykły model regresji logistycznej. Na zbiorze testowym najlepszą
-dokładność uzyskał model z użyciem metody undersampling, najlepszą (ale
-taką samą) czułość uzyskały modele z użyciem metody undersampling i
-oversampling a najwyższą specyficzność model znów zwykły model regresji
-logistycznej. Podsumowując za najlepszy uznajemy model uzyskany metodą
-undersampling, bo przyjmuje on najwyższą czułość, przy możliwie wysokim
-poziomie dokładności ( wyższym niż przy użyciu metody oversampling).</p>
+najlepszą dokładność na zbiorze treningowym uzyskał zwykły model
+regresji logistycznej, najlepszą czułość model z użyciem metody
+undersampling a najwyższą specyficzność model znów zwykły model regresji
+logistycznej. Na zbiorze testowym najlepszą dokładność uzyskał model z
+użyciem metody undersampling, najlepszą (ale taką samą) czułość uzyskały
+modele z użyciem metody undersampling i oversampling a najwyższą
+specyficzność model znów zwykły model regresji logistycznej.
+Podsumowując za najlepszy uznajemy model uzyskany metodą undersampling,
+bo przyjmuje on najwyższą czułość, przy możliwie wysokim poziomie
+dokładności ( wyższym niż przy użyciu metody oversampling).</p>
 </div>
 </div>
+</div>
+<div id="porównanie-trzech-modeli" class="section level3">
+<h3>Porównanie trzech modeli:</h3>
+<pre class="r"><code>cat(&quot;Model SVM z użyciem metody oversampling&quot;)</code></pre>
+<pre><code>## Model SVM z użyciem metody oversampling</code></pre>
+<pre class="r"><code>print(choosen_svm)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9175824   0.9176030   0.9175627
+## 2    Test 0.9127517   0.8591549   0.9615385</code></pre>
+<pre class="r"><code>cat(&quot;Model Random Forest z użyciem metody undesampling&quot;)</code></pre>
+<pre><code>## Model Random Forest z użyciem metody undesampling</code></pre>
+<pre class="r"><code>print(choosen_rForest)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9290780   0.9716312   0.8865248
+## 2    Test 0.9194631   0.9014085   0.9358974</code></pre>
+<pre class="r"><code>cat(&quot;Model Regresji Logistycznej z użyciem metody undesampling&quot;)</code></pre>
+<pre><code>## Model Regresji Logistycznej z użyciem metody undesampling</code></pre>
+<pre class="r"><code>print(choosen_glm)</code></pre>
+<pre><code>##   Dataset  Accuracy Sensitivity Specificity
+## 1   Train 0.9391635   0.9432624   0.9344262
+## 2    Test 0.9463087   0.9859155   0.9102564</code></pre>
 </div>
 
 
