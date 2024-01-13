@@ -10,6 +10,7 @@ output:
 ### Wstęp
 
 Celem niniejszej pracy jest osiągnięcie jak najbardziej precyzyjnej prognozy dotyczącej charakteru nowotworu piersi u kobiet, opartej na zebranych danych dotyczących zmian nowotworowych.
+Projekt jest zamieszczony również na GitHubie: https://github.com/G0409M/R_Machine_Learning
 
 Biblioteki użyte w projekcie:
 ```{r message=FALSE, warning=FALSE, paged.print=FALSE}
