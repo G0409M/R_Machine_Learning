@@ -22,6 +22,7 @@ library(randomForest)
 library(ROSE)
 library(smotefamily)
 library(DALEX)
+library(gridExtra)
 ```
 
 ### Opis danych 
@@ -414,7 +415,15 @@ Tym razem zauważamy, że najlepszą dokładność na zbiorze testowym przyjmuj�
 
 Ostatnim modelem utworzonym w nasym projekcie będzie model regresji logistycznej
 ```{r warning=FALSE}
+```
+
+
+```{r warning=FALSE}
 model<- caret::train(diagnosis ~ ., data = train_glm, method = "glm")
+```
+
+
+```{r warning=FALSE}
 summary(model)
 pred_train <- predict(model, newdata = train_glm)
 conf_matrix_train <- confusionMatrix(pred_train, train_glm$diagnosis, positive = "1")
@@ -510,3 +519,70 @@ cat("Model Regresji Logistycznej z użyciem metody undesampling")
 print(choosen_glm)
 ```
 
+### Analiza interpretowalności
+
+Do wykonania analizy interpretowalności wybrałyśmy model regresji logistycznej, ponieważ do jego wykonania nie musimy standaryzować danych, co ułatwia interpretowlność modelu.
+
+### Profile ceteris-paribus (PCP)
+
+
+Na początku przypominamy wygląd naszych danych.
+```{r message=FALSE, warning=FALSE}
+head(train_glm)
+model<- caret::train(diagnosis ~ ., data = train_glm, method = "glm")
+explain_glm <- explain(model = model,
+                       data = train_glm[,-6],
+                       y = train_glm$diagnosis,
+                       type = "classification",
+                       label = "Logistic regression")
+```
+```{r}
+exp<- train_glm[108,]
+exp
+```
+
+```{r}
+pcp<- predict_profile(explain_glm, exp)
+plot(pcp, variables = c("mean_radius"))
+plot(pcp, variables = c("mean_texture"))
+plot(pcp, variables = c("mean_perimeter"))
+plot(pcp, variables = c("mean_area"))
+plot(pcp, variables = c("mean_smoothness"))
+```
+### Wykresy częściowej zależności (PDP)
+```{r}
+pdp<- model_profile(explain_glm, "mean_radius")
+plot(pdp, geom = "profiles") + 
+    ggtitle("PCP and PDP for age")
+
+pdp<- model_profile(explain_glm, "mean_texture")
+plot(pdp, geom = "profiles") + 
+    ggtitle("PCP and PDP for age")
+
+pdp<- model_profile(explain_glm, "mean_perimeter")
+plot(pdp, geom = "profiles") + 
+    ggtitle("PCP and PDP for age")
+
+pdp<- model_profile(explain_glm, "mean_area")
+plot(pdp, geom = "profiles") + 
+    ggtitle("PCP and PDP for age")
+
+pdp<- model_profile(explain_glm, "mean_smoothness")
+plot(pdp, geom = "profiles") + 
+    ggtitle("PCP and PDP for age")
+
+
+```
+### Wartości SHAP
+
+```{r}
+shap <- predict_parts(explainer = explain_glm, 
+                      new_observation = exp, 
+                      type = "shap")
+p1 <- plot(shap)
+p2 <- plot(shap, show_boxplots = FALSE) 
+grid.arrange(p1, p2, nrow = 1)
+```
+
+
+### Podsumowanie
