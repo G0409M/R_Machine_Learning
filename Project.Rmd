@@ -1,5 +1,5 @@
 ---
-title: "Project"
+title: "Machine Learning"
 author: "Gabriela Maślanka, Karolina Gajewska"
 date: "`r Sys.Date()`"
 output:
@@ -415,9 +415,6 @@ Tym razem zauważamy, że najlepszą dokładność na zbiorze testowym przyjmuj�
 ##### Model regersji logistycznej
 
 Ostatnim modelem utworzonym w nasym projekcie będzie model regresji logistycznej
-```{r warning=FALSE}
-```
-
 
 ```{r warning=FALSE}
 model<- caret::train(diagnosis ~ ., data = train_glm, method = "glm")
@@ -520,6 +517,7 @@ cat("Model Regresji Logistycznej z użyciem metody undesampling")
 print(choosen_glm)
 ```
 
+Porównując do siebie te 3 modele na zbiorze treningowym najwyższą dokładność otrzymujemy dla regresji logistycznej z użyciem metody undesampling, natomiast czułość najwyższą zwróciły nam lasy losowe z użyciem metody undesampling, specyficzność najwyższą otrzymaliśmy z modelu regresji logistycznej. Ze względu, że lasy losowe zwróciły nam najwyższą czułość, a dokładność nie była znacząco niższa, to przyjmujemy, że zbiór testowy najlepiej zadziałał dla lasów losowych. Biorąc pod uwagę zbiór testowy - dokładność najlepszą również otrzymaliśmy dla modelu regresji logistycznej z użyciem metody undesampling, czułość również uzysaliśmy najlepszą dla tego modelu. Ze względu, że dokładność i czułośc wyszła najwyższa dla tego modelu to tak samo jak w zbiorze testowym przyjmujemy, że lasy losowe dla metody undersampling zwróciły najlepsze wyniki.
 ### Analiza interpretowalności
 
 Do wykonania analizy interpretowalności wybrałyśmy model regresji logistycznej, ponieważ do jego wykonania nie musimy standaryzować danych, co ułatwia interpretowlność modelu.
@@ -545,36 +543,73 @@ exp
 ```{r}
 pcp<- predict_profile(explain_glm, exp)
 plot(pcp, variables = c("mean_radius"))
+```
+
+Nasz obiekt, który obserwujemy, ma średnice guza o wielkości 16,16. Wykres bardzo gwałtownie rośnie pomiędzy 16, a 17 od 0 do 1. Prawdopodobieństwo w naszym przypadku jest niewielkie i szacuje się na około 0,001
+```{r}
 plot(pcp, variables = c("mean_texture"))
+```
+
+W przypadku tekstury nasz obiekt ma 21,5, więc prawdopodobieństwo zachorowania na raka złośliwego jest niewielkie - około 0,003. 
+```{r}
 plot(pcp, variables = c("mean_perimeter"))
+```
+
+Biorąc pod uwagę obwód od około 110 prawdopodobieństwo wynosi 0. Nasz obiekt ma 106, więc można z wykresu oszacować, ze szansa na zachoworowanie wynosi 0,002.
+```{r}
 plot(pcp, variables = c("mean_area"))
+```
+
+W przypadku powierzchni równiez im mniejsza tym większa szansa zachorowania na raka złolśliwego. Nasz obiekt ma niecałe 810 i jego prawdopodobieństwo jest praktycznie zerowe.
+```{r}
 plot(pcp, variables = c("mean_smoothness"))
 ```
+
+Jeśli chodzi o gładkośc to dla naszego obiektu pradowpodobieństwo zachorowania na raka złośliwego równiez jest bardzo bliskie 0.
+
+
+
 ### Wykresy częściowej zależności (PDP)
 ```{r}
 pdp<- model_profile(explain_glm, "mean_radius")
 plot(pdp, geom = "profiles") + 
-    ggtitle("PCP and PDP for age")
+    ggtitle("PCP and PDP for radius")
+```
 
+Szare linie to PCP, które przedstawiają, jak predykcje zmieniają się dla różnych instancji danych. Niebieska linia PDP, która pokazuje średnią tendencję predykcji w zależności od promienia.
+Wykres ten ilustruje, jak promień wpływa na predykcje modelu regresji logistycznej dotyczące średnicy guza. Widać, że wykreś średnio rośnie jednostajnie i wraz z większym promieniem - rośnie prawdopdobieństwo choroby
+```{r}
 pdp<- model_profile(explain_glm, "mean_texture")
 plot(pdp, geom = "profiles") + 
-    ggtitle("PCP and PDP for age")
+    ggtitle("PCP and PDP for texture")
+```
 
+W przypadku tekstury prawdopobieństwo nie wychodzi ponad poziom 0,8. Ma tendencję spadkową przy rosnącej teksturze. Średnia tendencja predykcji nie spada gwałtownie, tylko powoli
+```{r}
 pdp<- model_profile(explain_glm, "mean_perimeter")
 plot(pdp, geom = "profiles") + 
-    ggtitle("PCP and PDP for age")
+    ggtitle("PCP and PDP for perimeter")
+```
 
+Średnia tendencja predykcji dla obwodu jest kształtem zbliżona dla predykcji różnych obserwacji z naszego zbioru. Przy obwodzie około 60 nasze prawdopodobieństwo zaczyna regularnie spadać aż do obwodu 120 - gdzie prawdopodobieństwo jest równe 0.
+```{r}
 pdp<- model_profile(explain_glm, "mean_area")
 plot(pdp, geom = "profiles") + 
-    ggtitle("PCP and PDP for age")
+    ggtitle("PCP and PDP for area")
+```
 
+Biorąc pod uwagę powierzchnię średnia predykcja również ma zbliżony kształt wtkresu do do predykcji naszych obserwacji. Pry powierzchni około 450 zaczyna spadać, aż przy około 1100 prawdopodobieństwo zachorowania wynosi 0.
+```{r}
 pdp<- model_profile(explain_glm, "mean_smoothness")
 plot(pdp, geom = "profiles") + 
-    ggtitle("PCP and PDP for age")
-
-
+    ggtitle("PCP and PDP for smoothness")
 ```
-### Wartości SHAP
+
+Średnia tendencja predykcji dla gładkości również ma tendencję spadkową wraz z wzrostem wartości gładkości. Wykres PDP różni się kształtem od PCP, schodzi w dół łagodnie, gdy tendencja predykcji innych obserwacji spada dość gałtownie.
+
+
+
+### Wykresy SHAP
 
 ```{r}
 shap <- predict_parts(explainer = explain_glm, 
@@ -585,5 +620,9 @@ p2 <- plot(shap, show_boxplots = FALSE)
 grid.arrange(p1, p2, nrow = 1)
 ```
 
+Z wykresów wynika że mean_radius jest najbardziej wpływową zmienną, a najmniej - mean_smoothness. Dość duże znaczenie ma mean_perimeter oraz mean_area. Również mean_texture ma bardzo małe znaczenie dla naszego przypadku.
 
 ### Podsumowanie
+
+Celem naszej pracy było osiągnięcie jak najbardziej precyzyjnej prognozy dotyczącej charakteru nowotworu piersi u kobiet. Tworząc modele SVM, lasow losowych i regresji logistycznej. Metody oversampling i undersampling o wiele bardziej polepszyły dzialanie naszych modeli, co było zauważalne w wynikach przede wszystkim dokładności i czułości.
+Analiza wartości SHAP naszej obserwacji potwierdziła również korelacje zmiennych objaśniających z zmienną objaśnianą, co było widoczne na macierzy korelacji.
