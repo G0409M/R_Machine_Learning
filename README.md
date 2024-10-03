@@ -1,1 +1,11 @@
 # R_Machine_Learning
+![image](https://github.com/user-attachments/assets/6deabf73-e83f-4838-9d03-3013cddbb29d)
+![image](https://github.com/user-attachments/assets/40ce3a76-d957-4e97-a8e6-bcef2eeafea6)
+![image](https://github.com/user-attachments/assets/46feb080-d975-49f9-b126-05034feaf343)
+![image](https://github.com/user-attachments/assets/b1695262-1706-4225-bda7-12af9d0a31f6)
+![image](https://github.com/user-attachments/assets/ea4d4865-e9c3-4d56-8ae1-66171922c300)
+![image](https://github.com/user-attachments/assets/ae0ca187-8774-4c90-98a6-95a1a662a7cf)
+![image](https://github.com/user-attachments/assets/cc16c417-e5e2-4497-837f-606128838054)
+![image](https://github.com/user-attachments/assets/a2dbdef4-3c79-484a-adae-c9dd03b58782)
+![image](https://github.com/user-attachments/assets/5df8795b-5303-4c64-b46b-e8c8321fbe1d)
+![image](https://github.com/user-attachments/assets/aa71659e-08d2-486c-95e2-7e7961f7fe9a)
